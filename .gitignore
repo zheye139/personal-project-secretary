@@ -1,0 +1,59 @@
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local config
+config.py
+rag_mvp/config.py
+.env
+*.env
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Qdrant local data
+qdrant_storage/
+qdrant_local/
+**/qdrant_storage/
+**/qdrant_local/
+
+# Backups and archives
+backups/
+**/backups/
+*.zip
+*.7z
+*.rar
+
+# Generated knowledge-base outputs
+05_Summaries/qa_logs/
+05_Summaries/qa_logs_archived/
+05_Summaries/project_reports/
+05_Summaries/time_reports/
+
+# Private knowledge base data - keep real data outside the GitHub repository
+Personal_Knowledge_Base/
+01_Projects/
+02_Knowledge/
+03_Decisions/
+04_Problems/
+05_Summaries/
+06_Attachments/
+99_System/backups/
+99_System/qdrant_storage/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
