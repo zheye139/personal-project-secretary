@@ -22,8 +22,8 @@ def read_text(path: Path) -> str:
 
 def extract_section(text: str, heading: str) -> str:
     """
-    从 Markdown 中提取指定二级标题内容。
-    例如 heading="用户问题" 或 heading="模型回答"。
+    from Markdown in specified titlecontent. 
+    for example heading="user question" or heading="model answer". 
     """
     marker = f"## {heading}"
 
@@ -41,14 +41,14 @@ def extract_section(text: str, heading: str) -> str:
 
 def is_failed_log(text: str) -> bool:
     """
-    判断是否是失败/无效问答记录。
+    determinewhetherisfailed/invalidQA log. 
     """
     return any(pattern in text for pattern in FAILED_PATTERNS)
 
 
 def make_duplicate_key(text: str) -> str:
     """
-    根据用户问题 + 模型回答生成重复判断 key。
+     user question + model answer duplicatedetermine key. 
     """
     question = extract_section(text, "User Issues")
     answer = extract_section(text, "Model Response")
@@ -70,7 +70,7 @@ def collect_qa_logs() -> list[Path]:
 
 def analyze_logs(files: list[Path]) -> dict:
     """
-    分析失败记录和重复记录。
+     failedrecordandduplicaterecord. 
     """
     failed_files = []
     duplicate_files = []
@@ -86,7 +86,7 @@ def analyze_logs(files: list[Path]) -> dict:
         key = make_duplicate_key(text)
 
         if key in seen:
-            # 保留第一份，后续重复的归档
+            #  , laterduplicatearchive
             duplicate_files.append(file_path)
         else:
             seen[key] = file_path
@@ -99,7 +99,7 @@ def analyze_logs(files: list[Path]) -> dict:
 
 def move_files(files: list[Path], reason: str) -> None:
     """
-    将文件移动到归档目录，不直接删除。
+    filemovetoarchive directory, not delete. 
     """
     target_dir = QA_LOG_ARCHIVE_DIR / reason
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -107,7 +107,7 @@ def move_files(files: list[Path], reason: str) -> None:
     for file_path in files:
         target_path = target_dir / file_path.name
 
-        # 如果目标已存在，避免覆盖
+        # ifgoalalreadyexists,  
         if target_path.exists():
             stem = file_path.stem
             suffix = file_path.suffix
@@ -121,12 +121,12 @@ def move_files(files: list[Path], reason: str) -> None:
                 index += 1
 
         shutil.move(str(file_path), str(target_path))
-        print(f"Archived：{file_path.name} -> {target_path}")
+        print(f"Archived:{file_path.name} -> {target_path}")
 
 
 def print_files(title: str, files: list[Path]) -> None:
     print(f"\n=== {title} ===")
-    print(f"quantity：{len(files)}")
+    print(f"quantity:{len(files)}")
 
     if not files:
         return
@@ -190,7 +190,7 @@ def main():
         move_files(failed_files, "failed")
 
     if args.mode in ["duplicate", "all"] and duplicate_files:
-        # 避免同一个文件既是 failed 又是 duplicate 时重复移动
+        #  afile is failed  is duplicate  duplicatemove
         remaining_duplicate_files = [p for p in duplicate_files if p.exists()]
         move_files(remaining_duplicate_files, "duplicate")
 

@@ -12,7 +12,7 @@ from config import (
 )
 
 
-# 避免访问本机服务时走系统代理
+# Prevent local service requests from going through system proxies.
 for key in [
     "HTTP_PROXY",
     "HTTPS_PROXY",
@@ -28,13 +28,13 @@ os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
 
 
 def check_ollama():
-    print("=== 检查 Ollama ===")
+    print("=== check Ollama ===")
 
     try:
         resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=10)
         resp.raise_for_status()
     except Exception as e:
-        print(f"[Failure] Unable to connect Ollama：{e}")
+        print(f"[Failure] Unable to connect Ollama:{e}")
         return False
 
     data = resp.json()
@@ -90,7 +90,7 @@ def check_qdrant():
         return True
 
     except Exception as e:
-        print(f"[Failure] Unable to connect Qdrant：{e}")
+        print(f"[Failure] Unable to connect Qdrant:{e}")
         return False
 
 

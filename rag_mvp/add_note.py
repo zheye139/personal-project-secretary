@@ -27,7 +27,7 @@ DEFAULT_DOC_TYPE_MAP = {
 
 def sanitize_filename(text: str) -> str:
     """
-    将标题转换成适合 Windows 文件名的字符串。
+    Convert a title into a Windows-safe file name.
     """
     text = text.strip()
     text = re.sub(r'[\\/:*?"<>|]', "_", text)
@@ -37,9 +37,9 @@ def sanitize_filename(text: str) -> str:
 
 def parse_tags(raw_tags: str | None) -> list[str]:
     """
-    将逗号分隔的标签字符串转成列表。
-    示例：
-    "RAG, Qdrant, 问题记录"
+    Convert a comma-separated tag string into a list.
+     :
+    "RAG, Qdrant, issue record"
     """
     if not raw_tags:
         return []
@@ -49,9 +49,9 @@ def parse_tags(raw_tags: str | None) -> list[str]:
 
 def read_content(args) -> str:
     """
-    优先使用 --content。
-    如果没有 --content，但提供了 --from-file，则从文件读取。
-    如果都没有，则进入交互输入。
+    Use --content first.
+    If --content is not provided but --from-file is set, read content from the file.
+    If neither option is provided, read content from standard input.
     """
     if args.content:
         return args.content.strip()
@@ -69,12 +69,12 @@ def read_content(args) -> str:
 
 def build_target_dir(category: str, project: str | None) -> Path:
     """
-    根据 category 和 project 生成保存目录。
+    Build the target directory from category and project.
     """
     if category not in CATEGORY_DIR_MAP:
         raise ValueError(
-            f"Not supported category：{category}。"
-            f"Optional value：{', '.join(CATEGORY_DIR_MAP.keys())}"
+            f"Not supported category:{category}. "
+            f"Optional value:{', '.join(CATEGORY_DIR_MAP.keys())}"
         )
 
     root_dir = KNOWLEDGE_ROOT / CATEGORY_DIR_MAP[category]
@@ -106,7 +106,7 @@ def build_markdown(
     content: str,
 ) -> str:
     """
-    生成带 Frontmatter 的 Markdown 内容。
+    Generate Markdown content with Frontmatter.
     """
     now = datetime.now().isoformat(timespec="seconds")
     tag_text = "[" + ", ".join(tags) + "]" if tags else "[]"
@@ -207,7 +207,7 @@ def main():
 
     file_path.write_text(markdown, encoding="utf-8")
 
-    print("Record created：")
+    print("Record created:")
     print(file_path)
     print("")
     print("Next step:")

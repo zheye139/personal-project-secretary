@@ -15,7 +15,7 @@ from config import (
 )
 
 
-# 避免访问本机服务时走系统代理
+# Prevent local service requests from going through system proxies.
 for key in [
     "HTTP_PROXY",
     "HTTPS_PROXY",
@@ -158,110 +158,269 @@ def check_qdrant():
 
 
 def print_available_commands():
-    print("\n=== 当前可用命令 ===")
+    """
+     available commands. 
 
-    commands = [
-        ('python check_env.py', "检查 Ollama / Qdrant 环境"),
-        ('python ingest.py', "重新入库 Markdown 文档"),
-        ('python update_index.py', "一键检查环境 + 重新入库 + 列出文档"),
-        ('python list_docs.py', "列出已入库文档"),
-        ('python inspect_collection.py', "查看 Qdrant 集合和样本 payload"),
-        ('python ask.py "问题"', "普通 RAG 问答"),
-        ('python ask.py --project Demo_Project "问题"', "按项目检索问答"),
-        ('python ask.py --category problem "问题"', "按资料大类检索问答"),
-        ('python ask.py --tag RAG "问题"', "按标签检索问答"),
-        ('python add_note.py --category problem --title "标题" --content "内容"', "快速新增记录"),
-        ('python project_report.py --project Demo_Project', "生成项目状态报告"),
-        ('python time_report.py --project Demo_Project --mode daily', "生成日报"),
-        ('python time_report.py --project Demo_Project --mode weekly', "生成周报"),
-    ]
+    M1:basic RAG knowledge basecapability. 
+    M2:personal secretary capabilities script. 
+    """
+    print("\n===  available commands ===")
 
-    for cmd, desc in commands:
-        print(f"- {cmd}")
-        print(f"  {desc}")
+    command_groups = {
+        "basic and ": [
+            ("python check_env.py", "check Ollama / Qdrant / model "),
+            ("python health_check_full.py", "executefull-chain health check"),
+            ("python status.py", "viewsystem status overview"),
+            ("python list_docs.py", "listalready document"),
+            ("python inspect_collection.py", "view Qdrant collectionand  payload"),
+        ],
+        " and ": [
+            ("python ingest.py", "re-  Markdown document"),
+            ("python update_index.py", "one-clickcheck  + re-  + listdocument"),
+            ("python rebuild_index.py", "previewsafe rebuild Qdrant  "),
+            ("python rebuild_index.py --execute", "executesafe rebuild Qdrant  "),
+        ],
+        "question answeringandsearch": [
+            ('python ask.py "issue"', "  RAG question answering"),
+            (
+                'python ask.py --project Personal_Project_Assistant "issue"',
+                " retrievalquestion answering",
+            ),
+            (
+                'python ask.py --category problem "issue"',
+                " record categoryretrievalquestion answering",
+            ),
+            (
+                'python ask.py --tag RAG "issue"',
+                " tagsretrievalquestion answering",
+            ),
+            (
+                'python search_docs.py " " --show-text',
+                "searchknowledge basechunk, notcall qwen3:8b",
+            ),
+        ],
+        "recordadd and ": [
+            (
+                'python add_note.py --category problem --title "title" --content "content"',
+                "quicklyaddrecord",
+            ),
+            ("python inbox_import.py", "previewimport 00_Inbox in Markdown"),
+            ("python inbox_import.py --execute", "execute Inbox Markdown automaticarchive"),
+            (
+                "python project_template.py --project New_Project",
+                " knowledge base ",
+            ),
+            (
+                "python archive_project.py --project Test_Project",
+                "previewarchive ",
+            ),
+            (
+                "python archive_project.py --project Test_Project --execute",
+                "execute project archive",
+            ),
+        ],
+        "report ": [
+            (
+                "python project_report.py --project Personal_Project_Assistant",
+                " project status report",
+            ),
+            (
+                "python time_report.py --project Personal_Project_Assistant --mode daily",
+                " daily report",
+            ),
+            (
+                "python time_report.py --project Personal_Project_Assistant --mode weekly",
+                " weekly report",
+            ),
+        ],
+        "M2 personal secretary capabilities": [
+            (
+                "python next_action.py --project Personal_Project_Assistant",
+                " next action items",
+            ),
+            (
+                "python project_brief.py --project Personal_Project_Assistant",
+                " project brief",
+            ),
+            (
+                "python multi_project_status.py",
+                " project status",
+            ),
+            (
+                "python priority_advisor.py",
+                " project priority advice",
+            ),
+            (
+                "python review_assistant.py --project Personal_Project_Assistant",
+                " project records, identify and risks",
+            ),
+            (
+                "python secretary_report.py",
+                " personal secretary report",
+            ),
+            (
+                "python milestone_closeout.py --milestone M2",
+                "  M2 milestone closeout report",
+            ),
+        ],
+        "validation check andmaintenance": [
+            ("python validate_kb.py", "check knowledge base Markdown standard"),
+            (
+                "python validate_kb.py --write-report",
+                " knowledge basestandardcheck report",
+            ),
+            (
+                "python repair_frontmatter.py",
+                "preview Frontmatter repair",
+            ),
+            (
+                "python repair_frontmatter.py --execute",
+                "execute Frontmatter batchrepair",
+            ),
+            (
+                "python cleanup_qa_logs.py",
+                "previewcleanupfailed/duplicateQA log",
+            ),
+            (
+                "python cleanup_qa_logs.py --mode all --execute",
+                "archivefailed/duplicateQA log",
+            ),
+        ],
+        "backupandexport": [
+            ("python backup_kb.py", "backupcompleteknowledge base"),
+            (
+                "python export_project.py --project Personal_Project_Assistant",
+                "export specified project records ",
+            ),
+            (
+                "python export_project.py --project Personal_Project_Assistant --no-summaries",
+                "export project records , not summary file",
+            ),
+        ],
+    }
+
+    for group_name, commands in command_groups.items():
+        print(f"\n## {group_name}")
+
+        for cmd, desc in commands:
+            print(f"- {cmd}")
+            print(f"  {desc}")
 
 
 def print_next_steps(qdrant_info: dict):
-    print("\n=== 下一步建议 ===")
+    """
+     system statusprovidenext-step recommendations. 
+
+    thisinalready  M2 personal secretary capabilities . 
+    """
+    print("\n=== next-step recommendations ===")
 
     if not qdrant_info["ok"]:
-        print("1. Qdrant 当前不可访问，请先启动 Docker 容器：")
+        print("1. Qdrant  not accessible, please first  Docker  :")
         print("   docker start pkb-qdrant")
-        print("2. 然后执行：python check_env.py")
+        print("2.  execute:")
+        print("   python check_env.py")
         return
 
     if not qdrant_info["collection_exists"]:
-        print("1. 当前集合不存在，请先执行：python ingest.py")
-        print("2. 然后执行：python list_docs.py")
+        print("1.  collection does not exist, please firstexecute:")
+        print("   python ingest.py")
+        print("2.  execute:")
+        print("   python list_docs.py")
         return
 
-    print("1. 新增项目记录时，优先使用 add_note.py。")
-    print("2. 新增记录后，执行 python update_index.py 重新入库。")
-    print("3. 每完成一个小阶段，可以执行 project_report.py 生成项目状态报告。")
-    print("4. 每天或每周可以执行 time_report.py 生成日报/周报。")
-    print("5. 后续可以进入 M1.15：增加 search_docs.py，专门搜索文档和片段。")
+    print("##  basic ")
+    print("1. add project records , prioritize  add_note.py or inbox_import.py. ")
+    print("2. add or  Markdown  , execute:")
+    print("   python update_index.py")
+    print("3.  ifnot retrieval quality, firstexecute:")
+    print('   python search_docs.py " " --show-text')
+
+    print("\n## M2 personal secretary ")
+    print("if view , recommendations execute:")
+    print("1. python next_action.py --project Personal_Project_Assistant")
+    print("2. python project_brief.py --project Personal_Project_Assistant")
+    print("3. python multi_project_status.py")
+    print("4. python priority_advisor.py")
+    print("5. python review_assistant.py --project Personal_Project_Assistant")
+    print("6. python secretary_report.py")
+    print("7. python update_index.py")
+
+    print("\n## stagemaintenancerecommendations")
+    print("1.  completeda stage, execute:")
+    print("   python project_report.py --project Personal_Project_Assistant")
+    print("2. weeklyexecute:")
+    print("   python time_report.py --project Personal_Project_Assistant --mode weekly")
+    print("3. weeklyor execute:")
+    print("   python backup_kb.py")
+    print("4. eachstageend execute:")
+    print("   python milestone_closeout.py --milestone M2")
+
+    print("\n## next stagerecommendations")
+    print("M2.8  tasksis  status.py, commands.md, README etc. document. ")
+    print("completed can enter M3:tasks andautomatic capability. ")
 
 
 def main():
-    print("个人项目秘书 + 数据知识库：系统状态总览")
-    print(f"检查时间：{datetime.now().isoformat(timespec='seconds')}")
-    print(f"知识库根目录：{KNOWLEDGE_ROOT}")
+    print("Personal Project Secretary + Knowledge Base:system status overview")
+    print(f"check time:{datetime.now().isoformat(timespec='seconds')}")
+    print(f"knowledge base root:{KNOWLEDGE_ROOT}")
 
-    print("\n=== 模型与服务配置 ===")
-    print(f"Ollama 地址：{OLLAMA_URL}")
-    print(f"主对话模型：{CHAT_MODEL}")
-    print(f"向量模型：{EMBED_MODEL}")
-    print(f"Qdrant 地址：{QDRANT_URL}")
-    print(f"Qdrant 集合：{COLLECTION_NAME}")
+    print("\n=== modeland configuration ===")
+    print(f"Ollama  :{OLLAMA_URL}")
+    print(f"chat model:{CHAT_MODEL}")
+    print(f"embedding model:{EMBED_MODEL}")
+    print(f"Qdrant  :{QDRANT_URL}")
+    print(f"Qdrant collection:{COLLECTION_NAME}")
 
-    print("\n=== Ollama 状态 ===")
+    print("\n=== Ollama   ===")
     ollama_ok, models = check_ollama()
 
     if not ollama_ok:
-        print("[失败] Ollama 不可访问。")
+        print("[failed] Ollama not accessible. ")
     else:
-        print("[成功] Ollama 可访问。")
-        print(f"已安装模型：{models}")
+        print("[OK] Ollama accessible. ")
+        print(f"installedmodel:{models}")
 
         if model_exists(CHAT_MODEL, models):
-            print(f"[成功] 主对话模型存在：{CHAT_MODEL}")
+            print(f"[OK] chat modelexists:{CHAT_MODEL}")
         else:
-            print(f"[警告] 未发现主对话模型：{CHAT_MODEL}")
+            print(f"[ ] not foundchat model:{CHAT_MODEL}")
 
         if model_exists(EMBED_MODEL, models):
-            print(f"[成功] 向量模型存在：{EMBED_MODEL}")
+            print(f"[OK] embedding modelexists:{EMBED_MODEL}")
         else:
-            print(f"[警告] 未发现向量模型：{EMBED_MODEL}")
+            print(f"[ ] not foundembedding model:{EMBED_MODEL}")
 
-    print("\n=== Qdrant / 知识库状态 ===")
+    print("\n=== Qdrant / knowledge base  ===")
     qdrant_info = check_qdrant()
 
     if not qdrant_info["ok"]:
-        print("[失败] Qdrant 不可访问。")
+        print("[failed] Qdrant not accessible. ")
         print(qdrant_info.get("error", ""))
     else:
-        print("[成功] Qdrant 可访问。")
+        print("[OK] Qdrant accessible. ")
 
         if not qdrant_info["collection_exists"]:
-            print(f"[提示] 集合不存在：{COLLECTION_NAME}")
+            print(f"[ ] collection does not exist:{COLLECTION_NAME}")
         else:
-            print(f"[成功] 集合存在：{COLLECTION_NAME}")
-            print(f"向量片段数量：{qdrant_info['points_count']}")
-            print(f"文档数量：{qdrant_info['docs_count']}")
+            print(f"[OK] collectionexists:{COLLECTION_NAME}")
+            print(f" chunk count:{qdrant_info['points_count']}")
+            print(f"document count:{qdrant_info['docs_count']}")
 
-            print("\n项目片段统计：")
+            print("\n chunkstatistics:")
             for project, count in sorted(qdrant_info["projects"].items()):
                 print(f"- {project}: {count}")
 
-            print("\n最近新增 / 修改文档：")
+            print("\nrecentadd /  document:")
             for doc in qdrant_info["recent_docs"]:
                 print(
                     f"- [{doc['project']}] {doc['doc_type']} | "
                     f"{doc['file_name']} | "
-                    f"片段数：{doc['chunks']} | "
-                    f"更新时间：{doc['updated_at']}"
+                    f"chunk :{doc['chunks']} | "
+                    f"updated at:{doc['updated_at']}"
                 )
-                print(f"  来源：{doc['source']}")
+                print(f"  source:{doc['source']}")
 
     print_available_commands()
     print_next_steps(qdrant_info)

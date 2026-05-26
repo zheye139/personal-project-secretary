@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from config import QDRANT_URL, COLLECTION_NAME
 
 
-# 避免访问本机服务时走系统代理
+# Prevent local service requests from going through system proxies.
 for key in [
     "HTTP_PROXY",
     "HTTPS_PROXY",
@@ -29,8 +29,8 @@ def main():
     )
 
     if not client.collection_exists(COLLECTION_NAME):
-        print(f"集合不存在：{COLLECTION_NAME}")
-        print("请先运行：python ingest.py")
+        print(f"collection does not exist:{COLLECTION_NAME}")
+        print("please first :python ingest.py")
         return
 
     docs = defaultdict(
@@ -75,10 +75,10 @@ def main():
         if offset is None:
             break
 
-    print("=== 已入库文档列表 ===")
-    print(f"集合名称：{COLLECTION_NAME}")
-    print(f"片段总数：{total}")
-    print(f"文档数量：{len(docs)}")
+    print("=== already document list ===")
+    print(f"collection name:{COLLECTION_NAME}")
+    print(f"total chunk count:{total}")
+    print(f"document count:{len(docs)}")
 
     by_project = defaultdict(list)
 
@@ -86,16 +86,16 @@ def main():
         by_project[info["project"]].append(info)
 
     for project, items in sorted(by_project.items()):
-        print(f"\n## 项目：{project}")
+        print(f"\n##  :{project}")
 
         for info in sorted(items, key=lambda x: x["source"]):
             print(
                 f"- {info['doc_type']} | "
                 f"{info['file_name']} | "
-                f"片段数：{info['chunks']} | "
-                f"更新时间：{info['updated_at']}"
+                f"chunk :{info['chunks']} | "
+                f"updated at:{info['updated_at']}"
             )
-            print(f"  来源：{info['source']}")
+            print(f"  source:{info['source']}")
 
     try:
         client.close()

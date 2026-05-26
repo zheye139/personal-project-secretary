@@ -3,7 +3,7 @@ from datetime import datetime
 import uuid
 import os
 
-# 避免 Python/qdrant-client 访问本机服务时走系统代理
+# Prevent Python/qdrant-client from using system proxies for local services.
 for key in [
     "HTTP_PROXY",
     "HTTPS_PROXY",
@@ -35,9 +35,9 @@ from config import (
 def embed_text(text: str) -> list[float]:
     text = text.strip()
     if not text:
-        raise ValueError("不能向量化空文本")
+        raise ValueError("Cannot embed empty text")
 
-    # 新版 Ollama embedding 接口
+    #   Ollama embedding  
     try:
         resp = requests.post(
             f"{OLLAMA_URL}/api/embed",
@@ -51,7 +51,7 @@ def embed_text(text: str) -> list[float]:
     except Exception:
         pass
 
-    # 旧版 Ollama embedding 接口
+    #   Ollama embedding  
     resp = requests.post(
         f"{OLLAMA_URL}/api/embeddings",
         json={"model": EMBED_MODEL, "prompt": text},
@@ -88,13 +88,13 @@ def split_markdown(text: str, max_chars: int = CHUNK_MAX_CHARS) -> list[str]:
 
 def collect_markdown_files() -> list[Path]:
     """
-    收集知识库中的 Markdown 文件。
+    collectknowledge basein Markdown file. 
 
-    规则：
-    1. 默认收集知识库中的 .md 文件。
-    2. 跳过 .venv、backups、qdrant_storage、qdrant_local 等系统目录。
-    3. 允许 99_System/docs 中的说明文档入库。
-    4. 跳过 99_System/rag_mvp 中的工程说明以外脚本目录内容。
+    rules:
+    1. defaultcollectknowledge basein .md file. 
+    2. skip .venv, backups, qdrant_storage, qdrant_local etc. directory. 
+    3.   99_System/docs indescriptiondocument . 
+    4. skip 99_System/rag_mvp in description scriptdirectorycontent. 
     """
     files = []
 
@@ -114,12 +114,12 @@ def collect_markdown_files() -> list[Path]:
 
         rel_parts = path.relative_to(KNOWLEDGE_ROOT).parts
 
-        # 允许 99_System/docs 里的说明文档入库
+        #   99_System/docs indescriptiondocument 
         if len(rel_parts) >= 2 and rel_parts[0] == "99_System" and rel_parts[1] == "docs":
             files.append(path)
             continue
 
-        # 跳过 99_System 其他目录，避免把脚本工程、备份说明等杂项误入库
+        # skip 99_System  directory,  script , backupdescriptionetc. 
         if rel_parts and rel_parts[0] == "99_System":
             continue
 
@@ -130,9 +130,9 @@ def collect_markdown_files() -> list[Path]:
 
 def infer_project_name(file_path: Path) -> str:
     """
-    从路径推断项目名称。
-    例如：
-    D:\\Personal_Knowledge_Base\\01_Projects\\Demo_Project\\progress_log.md
+    frompathinferproject name. 
+    for example:
+    <your-knowledge-root>\\01_Projects\\Demo_Project\\progress_log.md
     => Demo_Project
     """
     try:
@@ -152,7 +152,7 @@ def infer_project_name(file_path: Path) -> str:
 
 def infer_doc_type(file_path: Path) -> str:
     """
-    从文件名推断文档类型。
+    fromfile nameinferdocument type. 
     """
     stem = file_path.stem.lower()
 
@@ -173,9 +173,9 @@ def infer_doc_type(file_path: Path) -> str:
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
     """
-    解析 Markdown 顶部的简单 YAML Frontmatter。
-    当前只做轻量解析，不依赖 pyyaml。
-    支持：
+    parse Markdown   YAML Frontmatter. 
+     only lightweightparse, not  pyyaml. 
+     :
     ---
     key: value
     tags: [a, b, c]
@@ -217,7 +217,7 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
 
 def infer_category(file_path: Path) -> str:
     """
-    从一级目录推断资料大类。
+    from directoryinferrecord category. 
     """
     try:
         rel_parts = file_path.relative_to(KNOWLEDGE_ROOT).parts
@@ -259,9 +259,9 @@ def ensure_collection(client: QdrantClient, vector_size: int):
                 distance=Distance.COSINE,
             ),
         )
-        print(f"已创建集合：{COLLECTION_NAME}")
+        print(f"collection created:{COLLECTION_NAME}")
     else:
-        print(f"集合已存在：{COLLECTION_NAME}")
+        print(f"collection already exists:{COLLECTION_NAME}")
 
 
 def make_point_id(source: str, chunk_index: int, chunk: str) -> str:
@@ -277,10 +277,10 @@ def main():
     )
 
     md_files = collect_markdown_files()
-    print(f"发现 Markdown 文件数量：{len(md_files)}")
+    print(f"found Markdown file count:{len(md_files)}")
 
     if not md_files:
-        print("没有发现可入库的 Markdown 文件。")
+        print("No indexable Markdown files were found. ")
         return
 
     all_items = []
@@ -297,7 +297,7 @@ def main():
         rel_path = str(file_path.relative_to(KNOWLEDGE_ROOT))
 
         if not chunks:
-            print(f"跳过空文件或无有效内容文件：{rel_path}")
+            print(f"skipempty fileornovalidcontentfile:{rel_path}")
             continue
 
         category = frontmatter.get("category") or infer_category(file_path)
@@ -329,18 +329,18 @@ def main():
             )
 
     if not all_items:
-        print("所有 Markdown 都为空，无法入库。请先写入至少一份有效 Markdown 内容。")
+        print("All Markdown files are empty and cannot be indexed. Please add at least one valid Markdown file first. ")
         return
 
     first_vector = embed_text(all_items[0]["text"])
     vector_size = len(first_vector)
-    print(f"向量维度：{vector_size}")
+    print(f"vector dimension:{vector_size}")
 
     ensure_collection(client, vector_size)
 
     points = []
 
-    for item in tqdm(all_items, desc="生成向量并入库"):
+    for item in tqdm(all_items, desc=" and "):
         vector = embed_text(item["text"])
 
         point_id = make_point_id(
@@ -374,8 +374,8 @@ def main():
         points=points,
     )
 
-    print("入库完成。")
-    print(f"有效片段数量：{len(points)}")
+    print("Indexing completed. ")
+    print(f"valid chunk count:{len(points)}")
 
     try:
         client.close()

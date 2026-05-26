@@ -63,11 +63,11 @@ def should_skip(path: Path) -> bool:
 
 def is_project_related_markdown(path: Path, project: str) -> bool:
     """
-    判断一个 Markdown 是否属于指定项目。
+    determinea Markdown whether specified . 
 
-    判断规则：
-    1. 01_Projects/project 目录下的文件属于该项目。
-    2. Frontmatter 中 project 等于目标 project 的文件属于该项目。
+    determinerules:
+    1. 01_Projects/project directory file this . 
+    2. Frontmatter in project etc. goal project file this . 
     """
     if should_skip(path):
         return False
@@ -105,7 +105,7 @@ def collect_project_files(project: str, include_summaries: bool = True) -> list[
         if path.suffix.lower() != ".md":
             continue
 
-        # 默认导出项目本体、问题、决策、总结等所有 Frontmatter project 匹配的 Markdown
+        # defaultexport , issue, decision, summaryetc.all Frontmatter project   Markdown
         if is_project_related_markdown(path, project):
             if not include_summaries:
                 rel_parts = path.relative_to(KNOWLEDGE_ROOT).parts
@@ -118,7 +118,7 @@ def collect_project_files(project: str, include_summaries: bool = True) -> list[
 
 def run_list_docs_snapshot(project: str, output_path: Path) -> None:
     """
-    保存当前 list_docs.py 输出，作为导出包快照。
+    save  list_docs.py  , asexport package . 
     """
     base_dir = Path(__file__).parent.resolve()
     python_exe = sys.executable
@@ -146,7 +146,7 @@ def run_list_docs_snapshot(project: str, output_path: Path) -> None:
         "",
         f"# {project} Exporting a snapshot of the imported document",
         "",
-        f"Generation time：{now}",
+        f"Generation time:{now}",
         "",
         "```text",
         result.stdout,
@@ -186,8 +186,8 @@ def create_manifest(project: str, files: list[Path], output_path: Path) -> None:
         "",
         f"# {project} Project Export List",
         "",
-        f"Export time：{now}",
-        f"Number of files：{len(files)}",
+        f"Export time:{now}",
+        f"Number of files:{len(files)}",
         "",
         "## File List",
         "",

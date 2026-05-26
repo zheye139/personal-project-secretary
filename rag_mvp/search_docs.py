@@ -14,7 +14,7 @@ from config import (
 )
 
 
-# 避免访问本机服务时走系统代理
+# Prevent local service requests from going through system proxies.
 for key in [
     "HTTP_PROXY",
     "HTTPS_PROXY",
@@ -32,7 +32,7 @@ os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
 def embed_text(text: str) -> list[float]:
     text = text.strip()
     if not text:
-        raise ValueError("不能向量化空文本")
+        raise ValueError("Cannot embed empty text")
 
     try:
         resp = requests.post(
@@ -118,7 +118,7 @@ def search_docs(
     )
 
     if not client.collection_exists(COLLECTION_NAME):
-        raise RuntimeError(f"集合不存在：{COLLECTION_NAME}，请先运行 python update_index.py")
+        raise RuntimeError(f"collection does not exist:{COLLECTION_NAME}, please first  python update_index.py")
 
     query_vector = embed_text(query)
     query_filter = build_query_filter(
@@ -175,30 +175,30 @@ def search_docs(
 
 def print_results(results: list[dict], show_text: bool, max_text_chars: int):
     if not results:
-        print("未检索到相关资料。")
+        print("not retrieved records. ")
         return
 
-    print(f"检索结果数量：{len(results)}")
+    print(f"retrieval resultscount:{len(results)}")
 
     for i, item in enumerate(results, start=1):
         print("\n" + "=" * 80)
-        print(f"结果 {i}")
+        print(f"  {i}")
         print("=" * 80)
-        print(f"相关度：{item['score']:.4f}")
-        print(f"资料大类：{item['category']}")
-        print(f"项目：{item['project']}")
-        print(f"文档类型：{item['doc_type']}")
-        print(f"标题：{item['title']}")
-        print(f"标签：{item['tags']}")
-        print(f"文件名：{item['file_name']}")
-        print(f"来源：{item['source']}")
-        print(f"片段：{item['chunk_index']}")
-        print(f"更新时间：{item['updated_at']}")
+        print(f"relevance score:{item['score']:.4f}")
+        print(f"record category:{item['category']}")
+        print(f" :{item['project']}")
+        print(f"document type:{item['doc_type']}")
+        print(f"title:{item['title']}")
+        print(f"tags:{item['tags']}")
+        print(f"file name:{item['file_name']}")
+        print(f"source:{item['source']}")
+        print(f"chunk:{item['chunk_index']}")
+        print(f"updated at:{item['updated_at']}")
 
         if show_text:
             text = item["text"] or ""
             preview = text[:max_text_chars]
-            print("\n内容预览：")
+            print("\ncontent preview:")
             print(preview)
 
             if len(text) > max_text_chars:
@@ -207,57 +207,57 @@ def print_results(results: list[dict], show_text: bool, max_text_chars: int):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="个人项目秘书 + 数据知识库：搜索知识库片段，不调用 qwen3:8b"
+        description="Personal Project Secretary + Knowledge Base:searchknowledge basechunk, notcall qwen3:8b"
     )
 
     parser.add_argument(
         "query",
         nargs="*",
-        help="搜索问题或关键词",
+        help="searchissueor ",
     )
 
     parser.add_argument(
         "--project",
         default=None,
-        help="限定项目，例如 Demo_Project",
+        help=" , for example Demo_Project",
     )
 
     parser.add_argument(
         "--doc-type",
         default=None,
-        help="限定文档类型，例如 progress_log、qa_log、project_report",
+        help=" document type, for example progress_log, qa_log, project_report",
     )
 
     parser.add_argument(
         "--category",
         default=None,
-        help="限定资料大类，例如 project、knowledge、decision、problem、summary",
+        help=" record category, for example project, knowledge, decision, problem, summary",
     )
 
     parser.add_argument(
         "--tag",
         default=None,
-        help="限定标签，例如 RAG、自动生成、项目报告",
+        help=" tags, for example RAG, auto generated, project report",
     )
 
     parser.add_argument(
         "--limit",
         type=int,
         default=SEARCH_LIMIT,
-        help="返回结果数量",
+        help=" count",
     )
 
     parser.add_argument(
         "--show-text",
         action="store_true",
-        help="显示片段正文预览",
+        help="displaychunk textpreview",
     )
 
     parser.add_argument(
         "--max-text-chars",
         type=int,
         default=500,
-        help="正文预览最大字符数",
+        help="bodypreview ",
     )
 
     args = parser.parse_args()
@@ -265,22 +265,22 @@ def main():
     if args.query:
         query = " ".join(args.query).strip()
     else:
-        query = input("请输入搜索内容：").strip()
+        query = input("Enter search query:").strip()
 
     if not query:
-        print("搜索内容不能为空。")
+        print("Search query cannot be empty. ")
         return
 
     if args.project:
-        print(f"限定项目：{args.project}")
+        print(f" :{args.project}")
     if args.doc_type:
-        print(f"限定文档类型：{args.doc_type}")
+        print(f" document type:{args.doc_type}")
     if args.category:
-        print(f"限定资料大类：{args.category}")
+        print(f" record category:{args.category}")
     if args.tag:
-        print(f"限定标签：{args.tag}")
+        print(f" tags:{args.tag}")
 
-    print(f"搜索内容：{query}")
+    print(f"search query:{query}")
 
     results = search_docs(
         query=query,

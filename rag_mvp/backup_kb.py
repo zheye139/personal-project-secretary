@@ -26,7 +26,7 @@ EXCLUDE_FILE_SUFFIXES = {
 
 def should_skip(path: Path) -> bool:
     """
-    判断文件或目录是否需要跳过。
+    determinefile or directorywhether skip. 
     """
     parts = set(path.parts)
 
@@ -41,8 +41,8 @@ def should_skip(path: Path) -> bool:
 
 def collect_files() -> list[Path]:
     """
-    收集需要备份的文件。
-    默认备份整个知识库根目录，但排除虚拟环境、缓存、Qdrant 数据目录和历史备份。
+    collect backupfile. 
+    defaultbackup knowledge base root,  ,  , Qdrant  directoryand backup. 
     """
     files = []
 
@@ -58,7 +58,7 @@ def collect_files() -> list[Path]:
 
 def run_list_docs(output_path: Path) -> None:
     """
-    执行 list_docs.py，把当前入库文档状态保存到备份目录。
+    execute list_docs.py,  document save tobackup directory. 
     """
     base_dir = Path(__file__).parent.resolve()
     python_exe = sys.executable
@@ -75,7 +75,7 @@ def run_list_docs(output_path: Path) -> None:
     content = []
     content.append("# Current list of documents added to the database")
     content.append("")
-    content.append(f"Generation time：{datetime.now().isoformat(timespec='seconds')}")
+    content.append(f"Generation time:{datetime.now().isoformat(timespec='seconds')}")
     content.append("")
     content.append("```text")
     content.append(result.stdout)
@@ -93,7 +93,7 @@ def run_list_docs(output_path: Path) -> None:
 
 def create_zip_backup(files: list[Path], backup_zip_path: Path) -> None:
     """
-    创建 zip 备份包。
+    create zip backup package. 
     """
     with ZipFile(backup_zip_path, "w", ZIP_DEFLATED) as zipf:
         for file_path in files:
@@ -105,13 +105,13 @@ def main():
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    backup_name = f"{timestamp}_Personal_Knowledge_Base_backup"
+    backup_name = f"{timestamp}_personal_project_secretary_backup"
     temp_dir = BACKUP_DIR / backup_name
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     print("Personal Project Secretary + Data Knowledge Base: Backup Tool")
-    print(f"Knowledge Base Root Directory：{KNOWLEDGE_ROOT}")
-    print(f"Backup output directory：{BACKUP_DIR}")
+    print(f"Knowledge Base Root Directory:{KNOWLEDGE_ROOT}")
+    print(f"Backup output directory:{BACKUP_DIR}")
 
     print("\n Generating a list of currently added documents...")
     list_docs_path = temp_dir / "list_docs_snapshot.md"
@@ -120,17 +120,17 @@ def main():
     print("Collecting files that need to be backed up...")
     files = collect_files()
 
-    # 把 list_docs_snapshot.md 也加入备份
+    #  list_docs_snapshot.md  backup
     files.append(list_docs_path)
 
-    print(f"Number of files to be backed up：{len(files)}")
+    print(f"Number of files to be backed up:{len(files)}")
 
     backup_zip_path = BACKUP_DIR / f"{backup_name}.zip"
 
     print("Creating a zip backup package...")
     create_zip_backup(files, backup_zip_path)
 
-    # 清理临时目录
+    # cleanuptemporarydirectory
     try:
         shutil.rmtree(temp_dir)
     except Exception:

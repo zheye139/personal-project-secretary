@@ -15,7 +15,7 @@ from config import (
 )
 
 
-# 避免访问本机服务时走系统代理
+# Prevent local service requests from going through system proxies.
 for key in [
     "HTTP_PROXY",
     "HTTPS_PROXY",
@@ -43,13 +43,13 @@ def get_time_range(mode: str) -> tuple[datetime, datetime]:
         end = now
         return start, end
 
-    raise ValueError("mode 只支持 daily 或 weekly")
+    raise ValueError("mode only  daily or weekly")
 
 
 def build_filter(project: str):
     """
-    Qdrant 这里只按 project 过滤。
-    时间范围在 Python 中根据 updated_at 再判断，避免 Range 只能处理数字的问题。
+    Qdrant thisinonly  project filter. 
+    time rangein Python in  updated_at thendetermine,   Range onlycan issue. 
     """
     return Filter(
         must=[
@@ -62,8 +62,8 @@ def build_filter(project: str):
 
 def parse_datetime(value: str) -> datetime | None:
     """
-    解析 ISO 时间字符串。
-    例如：2026-05-17T20:34:04
+    parse ISO time . 
+    for example:2026-05-17T20:34:04
     """
     if not value:
         return None
@@ -76,7 +76,7 @@ def parse_datetime(value: str) -> datetime | None:
 
 def is_in_time_range(updated_at: str, start: datetime, end: datetime) -> bool:
     """
-    判断 updated_at 是否在日报/周报时间范围内。
+    determine updated_at whetherindaily report/weekly reporttime range . 
     """
     dt = parse_datetime(updated_at)
 
@@ -96,7 +96,7 @@ def load_context(project: str, mode: str, max_points: int = 100, max_chars: int 
     )
 
     if not client.collection_exists(COLLECTION_NAME):
-        raise RuntimeError(f"集合不存在：{COLLECTION_NAME}，请先运行 python update_index.py")
+        raise RuntimeError(f"collection does not exist:{COLLECTION_NAME}, please first  python update_index.py")
 
     scroll_filter = build_filter(project=project)
 
@@ -176,15 +176,15 @@ def build_context_text(contexts: list[dict]) -> str:
     lines = []
 
     for i, ctx in enumerate(contexts, start=1):
-        lines.append(f"## 资料 {i}")
-        lines.append(f"- 资料大类：{ctx.get('category', '')}")
-        lines.append(f"- 项目：{ctx.get('project', '')}")
-        lines.append(f"- 文档类型：{ctx.get('doc_type', '')}")
-        lines.append(f"- 标题：{ctx.get('title', '')}")
-        lines.append(f"- 标签：{ctx.get('tags', [])}")
-        lines.append(f"- 文件：{ctx.get('file_name', '')}")
-        lines.append(f"- 来源：{ctx.get('source', '')}")
-        lines.append(f"- 更新时间：{ctx.get('updated_at', '')}")
+        lines.append(f"## records {i}")
+        lines.append(f"- record category:{ctx.get('category', '')}")
+        lines.append(f"-  :{ctx.get('project', '')}")
+        lines.append(f"- document type:{ctx.get('doc_type', '')}")
+        lines.append(f"- title:{ctx.get('title', '')}")
+        lines.append(f"- tags:{ctx.get('tags', [])}")
+        lines.append(f"- file:{ctx.get('file_name', '')}")
+        lines.append(f"- source:{ctx.get('source', '')}")
+        lines.append(f"- updated at:{ctx.get('updated_at', '')}")
         lines.append("")
         lines.append(ctx.get("text", ""))
         lines.append("")
@@ -197,61 +197,61 @@ def generate_time_report(project: str, mode: str, contexts: list[dict]) -> str:
     start, end = get_time_range(mode)
 
     if mode == "daily":
-        title = f"{project} 日报"
+        title = f"{project} daily report"
         report_sections = """
-## 1. 今日总体状态
-## 2. 今日完成内容
-## 3. 今日新增资料
-## 4. 今日遇到的问题
-## 5. 今日重要决策
-## 6. 明日建议
+## 1. today 
+## 2. todaycompletedcontent
+## 3. todayaddrecords
+## 4. today toissue
+## 5. todayimportant decisions
+## 6. tomorrowrecommendations
 """
     else:
-        title = f"{project} 周报"
+        title = f"{project} weekly report"
         report_sections = """
-## 1. 本周总体状态
-## 2. 本周完成内容
-## 3. 本周新增资料
-## 4. 本周遇到的问题与解决情况
-## 5. 本周重要决策
-## 6. 当前风险
-## 7. 下周建议
+## 1. this week 
+## 2. this weekcompletedcontent
+## 3. this weekaddrecords
+## 4. this week toissues and resolution status
+## 5. this weekimportant decisions
+## 6. current risks
+## 7.  recommendations
 """
 
     context_text = build_context_text(contexts)
 
     if not contexts:
-        context_text = "当前时间范围内没有检索到相关资料。"
+        context_text = "No relevant records were found in the current time range."
 
     prompt = f"""
-你是我的个人项目秘书和数据知识库助手。
+ is Personal Project SecretaryandKnowledge Base . 
 
-请根据下面的知识库资料生成一份项目时间报告。
+please knowledge base records timereport. 
 
-【项目名称】
+[project name]
 {project}
 
-【报告类型】
+[report type]
 {mode}
 
-【时间范围】
-{start.isoformat(timespec="seconds")} 到 {end.isoformat(timespec="seconds")}
+[time range]
+{start.isoformat(timespec="seconds")} to {end.isoformat(timespec="seconds")}
 
-【知识库资料】
+[knowledge base records]
 {context_text}
 
-【输出要求】
-请使用中文 Markdown 格式输出。
+[ ]
+pleaseUse English Markdown output. 
 
 # {title}
 
 {report_sections}
 
-要求：
-1. 只根据资料回答，不要编造。
-2. 如果某一部分资料不足，请写“资料不足，无法确认”。
-3. 输出要适合直接保存到项目知识库。
-4. 不要输出思考过程，不要输出 <think> 标签。
+ :
+1. only answer based on records, do not fabricate information. 
+2. if insufficient records, please 'insufficient records, no '. 
+3.  save to knowledge base. 
+4. do not output reasoning process, not  <think> tags. 
 """
 
     resp = requests.post(
@@ -276,10 +276,10 @@ def save_time_report(project: str, mode: str, report: str, contexts: list[dict])
 
     if mode == "daily":
         doc_type = "daily_report"
-        tag_name = "日报"
+        tag_name = "daily report"
     else:
         doc_type = "weekly_report"
-        tag_name = "周报"
+        tag_name = "weekly report"
 
     file_path = TIME_REPORT_DIR / f"{timestamp}_{project}_{doc_type}.md"
 
@@ -292,18 +292,18 @@ def save_time_report(project: str, mode: str, report: str, contexts: list[dict])
     lines.append("category: summary")
     lines.append(f"project: {project}")
     lines.append(f"doc_type: {doc_type}")
-    lines.append(f"tags: [{tag_name}, 项目报告, RAG, 自动生成]")
+    lines.append(f"tags: [{tag_name}, project report, RAG, auto generated]")
     lines.append("---")
     lines.append("")
     lines.append(report)
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("## 本报告使用的知识库来源")
+    lines.append("##  report knowledge basesource")
     lines.append("")
 
     if not sources:
-        lines.append("未记录来源。")
+        lines.append("No source recorded. ")
     else:
         for source in sources:
             lines.append(f"- {source}")
@@ -316,40 +316,40 @@ def save_time_report(project: str, mode: str, report: str, contexts: list[dict])
 
 def main():
     parser = argparse.ArgumentParser(
-        description="个人项目秘书 + 数据知识库：生成日报 / 周报"
+        description="Personal Project Secretary + Knowledge Base: daily report / weekly report"
     )
 
     parser.add_argument(
         "--project",
         required=True,
-        help="项目名称，例如 Demo_Project",
+        help="project name, for example Demo_Project",
     )
 
     parser.add_argument(
         "--mode",
         required=True,
         choices=["daily", "weekly"],
-        help="报告类型：daily 或 weekly",
+        help="report type:daily or weekly",
     )
 
     parser.add_argument(
         "--max-points",
         type=int,
         default=100,
-        help="最多读取多少个向量片段",
+        help=" read chunk",
     )
 
     parser.add_argument(
         "--max-chars",
         type=int,
         default=22000,
-        help="最多提供多少字符给模型",
+        help=" model",
     )
 
     args = parser.parse_args()
 
-    print(f"正在生成 {args.mode} 报告")
-    print(f"项目：{args.project}")
+    print(f"running  {args.mode} report")
+    print(f" :{args.project}")
 
     contexts = load_context(
         project=args.project,
@@ -358,7 +358,7 @@ def main():
         max_chars=args.max_chars,
     )
 
-    print(f"读取到片段数量：{len(contexts)}")
+    print(f"loaded chunk count:{len(contexts)}")
 
     report = generate_time_report(
         project=args.project,
@@ -374,10 +374,10 @@ def main():
     )
 
     print("")
-    print("时间报告已生成：")
+    print("timereportalready :")
     print(file_path)
     print("")
-    print("建议下一步执行：")
+    print("recommended next command:")
     print("python update_index.py")
 
 

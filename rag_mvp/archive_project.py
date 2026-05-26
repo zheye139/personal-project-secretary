@@ -12,14 +12,14 @@ ARCHIVE_ROOT = KNOWLEDGE_ROOT / "01_Projects_Archived"
 
 def project_path(project: str) -> Path:
     """
-    获取项目当前路径。
+    Get the current project path.
     """
     return PROJECT_ROOT / project
 
 
 def archive_path(project: str) -> Path:
     """
-    生成带时间戳的归档路径，避免覆盖历史归档。
+    Build a timestamped archive path to avoid overwriting existing archives.
     """
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return ARCHIVE_ROOT / f"{timestamp}_{project}"
@@ -27,7 +27,7 @@ def archive_path(project: str) -> Path:
 
 def count_files(path: Path) -> int:
     """
-    统计目录中的文件数量。
+    Count files in a directory.
     """
     if not path.exists():
         return 0
@@ -37,7 +37,7 @@ def count_files(path: Path) -> int:
 
 def write_archive_note(target_dir: Path, project: str, source_dir: Path) -> None:
     """
-    在归档目录中写入 ARCHIVED.md，记录归档信息。
+    Write ARCHIVED.md in the archived project directory.
     """
     note_path = target_dir / "ARCHIVED.md"
     now = datetime.now().isoformat(timespec="seconds")
@@ -96,19 +96,19 @@ python status.py
 
 def archive_project(project: str, execute: bool = False) -> None:
     """
-    归档指定项目目录。
+    Archive the specified project directory.
 
-    默认只预览，不移动文件。
-    使用 --execute 后才会真正移动目录。
+    Preview by default and do not move files.
+    Move the directory only when --execute is provided.
     """
     src = project_path(project)
 
     if not src.exists():
-        print(f"[error] Project does not exist：{src}")
+        print(f"[error] Project does not exist:{src}")
         return
 
     if not src.is_dir():
-        print(f"[error] The target is not a directory：{src}")
+        print(f"[error] The target is not a directory:{src}")
         return
 
     dst = archive_path(project)
@@ -116,11 +116,11 @@ def archive_project(project: str, execute: bool = False) -> None:
 
     print("Personal Project Secretary + Data Knowledge Base: Project Archiving Tool")
     print("")
-    print(f"Project Name：{project}")
-    print(f"Source directory：{src}")
-    print(f"Target Archive Directory：{dst}")
-    print(f"Number of files：{file_count}")
-    print(f"Perform archiving：{execute}")
+    print(f"Project Name:{project}")
+    print(f"Source directory:{src}")
+    print(f"Target Archive Directory:{dst}")
+    print(f"Number of files:{file_count}")
+    print(f"Perform archiving:{execute}")
 
     if not execute:
         print("")

@@ -24,10 +24,10 @@ def should_skip(path: Path) -> bool:
 
 def parse_frontmatter(text: str) -> tuple[dict, str, bool]:
     """
-    返回：
-    metadata: Frontmatter 字段
-    body: 正文
-    has_frontmatter: 是否存在 Frontmatter
+     :
+    metadata: Frontmatter field
+    body: body
+    has_frontmatter: whetherexists Frontmatter
     """
     text = text.lstrip()
 
@@ -66,7 +66,7 @@ def collect_markdown_files() -> list[Path]:
         if should_skip(path):
             continue
 
-        # 允许 99_System/docs 入库和检查；跳过 99_System 其他目录
+        #   99_System/docs  andcheck;skip 99_System  directory
         rel_parts = path.relative_to(KNOWLEDGE_ROOT).parts
 
         if len(rel_parts) >= 2 and rel_parts[0] == "99_System" and rel_parts[1] == "docs":
@@ -92,19 +92,19 @@ def validate_file(path: Path) -> list[str]:
     rel_path = path.relative_to(KNOWLEDGE_ROOT)
 
     if not text.strip():
-        issues.append("空文件")
+        issues.append("empty file")
         return issues
 
     metadata, body, has_frontmatter = parse_frontmatter(text)
 
     if not has_frontmatter:
-        issues.append("缺少 Frontmatter")
+        issues.append("missing Frontmatter")
         return issues
 
     for field in REQUIRED_FIELDS:
         value = metadata.get(field, "").strip()
         if not value:
-            issues.append(f"缺少字段：{field}")
+            issues.append(f"missingfield:{field}")
 
     category = metadata.get("category", "").strip()
     if category and category not in {
@@ -116,16 +116,16 @@ def validate_file(path: Path) -> list[str]:
         "attachment",
         "system",
     }:
-        issues.append(f"category 不规范：{category}")
+        issues.append(f"category invalid:{category}")
 
     if metadata.get("tags", "").strip() in {"[]", ""}:
-        issues.append("tags 为空")
+        issues.append("tags is empty")
 
     if not body.strip():
-        issues.append("正文为空")
+        issues.append("body is empty")
 
     if len(str(rel_path)) > 180:
-        issues.append("路径过长，后续不方便维护")
+        issues.append("path is too long, laternot maintenance")
 
     return issues
 
@@ -142,23 +142,23 @@ def write_report(results: dict[Path, list[str]]) -> Path:
 
     lines = []
     lines.append("---")
-    lines.append(f"title: 知识库规范检查报告 {timestamp}")
+    lines.append(f"title: knowledge basestandardcheck report {timestamp}")
     lines.append(f"created: {now.isoformat(timespec='seconds')}")
     lines.append("category: summary")
     lines.append("project: Demo_Project")
     lines.append("doc_type: validation_report")
-    lines.append("tags: [知识库检查, validation, 自动生成, M1.25]")
+    lines.append("tags: [knowledge basecheck, validation, auto generated, M1.25]")
     lines.append("---")
     lines.append("")
-    lines.append("# 知识库规范检查报告")
+    lines.append("# knowledge basestandardcheck report")
     lines.append("")
-    lines.append(f"检查时间：{now.isoformat(timespec='seconds')}")
+    lines.append(f"check time:{now.isoformat(timespec='seconds')}")
     lines.append("")
-    lines.append(f"问题文件数量：{len(results)}")
+    lines.append(f"files with issuescount:{len(results)}")
     lines.append("")
 
     if not results:
-        lines.append("未发现明显规范问题。")
+        lines.append("not found standardissue. ")
     else:
         for path, issues in results.items():
             rel_path = path.relative_to(KNOWLEDGE_ROOT)
@@ -174,28 +174,28 @@ def write_report(results: dict[Path, list[str]]) -> Path:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="个人项目秘书 + 数据知识库：Markdown 规范检查工具"
+        description="Personal Project Secretary + Knowledge Base:Markdown standardcheck tool"
     )
 
     parser.add_argument(
         "--write-report",
         action="store_true",
-        help="将检查结果保存为 Markdown 报告。",
+        help="check resultssaveas Markdown report. ",
     )
 
     parser.add_argument(
         "--show-ok",
         action="store_true",
-        help="显示通过检查的文件。",
+        help="displaypassedcheckfile. ",
     )
 
     args = parser.parse_args()
 
     files = collect_markdown_files()
 
-    print("个人项目秘书 + 数据知识库：Markdown 规范检查")
-    print(f"知识库根目录：{KNOWLEDGE_ROOT}")
-    print(f"检查 Markdown 文件数量：{len(files)}")
+    print("Personal Project Secretary + Knowledge Base:Markdown validation check")
+    print(f"knowledge base root:{KNOWLEDGE_ROOT}")
+    print(f"check Markdown file count:{len(files)}")
 
     problem_results = {}
     ok_count = 0
@@ -208,26 +208,26 @@ def main():
         if issues:
             problem_results[path] = issues
             print("")
-            print(f"[问题] {rel_path}")
+            print(f"[issue] {rel_path}")
             for issue in issues:
                 print(f"  - {issue}")
         else:
             ok_count += 1
             if args.show_ok:
-                print(f"[通过] {rel_path}")
+                print(f"[passed] {rel_path}")
 
     print("")
-    print("=== 检查总结 ===")
-    print(f"通过文件数量：{ok_count}")
-    print(f"问题文件数量：{len(problem_results)}")
+    print("=== check summary ===")
+    print(f"passedfile count:{ok_count}")
+    print(f"files with issuescount:{len(problem_results)}")
 
     if args.write_report:
         report_path = write_report(problem_results)
         print("")
-        print("检查报告已生成：")
+        print("check reportalready :")
         print(report_path)
         print("")
-        print("建议下一步执行：")
+        print("recommended next command:")
         print("python update_index.py")
 
 

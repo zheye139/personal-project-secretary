@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from config import QDRANT_URL, COLLECTION_NAME
 
 
-# 避免访问本机服务时走系统代理
+# Prevent local service requests from going through system proxies.
 for key in [
     "HTTP_PROXY",
     "HTTPS_PROXY",
@@ -29,18 +29,18 @@ def main():
     )
 
     if not client.collection_exists(COLLECTION_NAME):
-        print(f"集合不存在：{COLLECTION_NAME}")
-        print("请先运行：python ingest.py")
+        print(f"collection does not exist:{COLLECTION_NAME}")
+        print("please first :python ingest.py")
         return
 
     info = client.get_collection(COLLECTION_NAME)
 
-    print("=== Qdrant 集合信息 ===")
-    print(f"集合名称：{COLLECTION_NAME}")
-    print(f"向量数量：{info.points_count}")
-    print(f"向量配置：{info.config.params.vectors}")
+    print("=== Qdrant collection  ===")
+    print(f"collection name:{COLLECTION_NAME}")
+    print(f"vector count:{info.points_count}")
+    print(f"vector configuration:{info.config.params.vectors}")
 
-    print("\n=== 示例数据 ===")
+    print("\n===   ===")
 
     points, _ = client.scroll(
         collection_name=COLLECTION_NAME,
@@ -50,7 +50,7 @@ def main():
     )
 
     if not points:
-        print("集合中没有数据。")
+        print("collection contains no data. ")
         return
 
     project_counter = Counter()
@@ -69,24 +69,24 @@ def main():
         project_counter[project] += 1
         doc_type_counter[doc_type] += 1
 
-        print(f"\n--- 片段 {i} ---")
-        print(f"项目：{project}")
-        print(f"文档类型：{doc_type}")
-        print(f"文件名：{file_name}")
-        print(f"来源：{source}")
-        print(f"片段序号：{chunk_index}")
-        print(f"更新时间：{updated_at}")
+        print(f"\n--- chunk {i} ---")
+        print(f" :{project}")
+        print(f"document type:{doc_type}")
+        print(f"file name:{file_name}")
+        print(f"source:{source}")
+        print(f"chunk index:{chunk_index}")
+        print(f"updated at:{updated_at}")
 
         text = payload.get("text", "")
         preview = text.replace("\n", " ")[:120]
-        print(f"内容预览：{preview}...")
+        print(f"content preview:{preview}...")
 
-    print("\n=== 前 10 条样本统计 ===")
-    print("项目统计：")
+    print("\n===   10  statistics ===")
+    print(" statistics:")
     for project, count in project_counter.items():
         print(f"- {project}: {count}")
 
-    print("文档类型统计：")
+    print("document type statistics:")
     for doc_type, count in doc_type_counter.items():
         print(f"- {doc_type}: {count}")
 

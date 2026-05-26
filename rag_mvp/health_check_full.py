@@ -27,7 +27,7 @@ from config import (
 BASE_DIR = Path(__file__).parent.resolve()
 
 
-# 避免访问本机服务时走系统代理
+# Prevent local service requests from going through system proxies.
 for key in [
     "HTTP_PROXY",
     "HTTPS_PROXY",
@@ -275,23 +275,23 @@ def check_qdrant_temp_write_search(vector: list[float]) -> bool:
             )
 
         if not points:
-            print("[失败] 临时集合检索无结果。")
+            print("[failed] temporary collectionno retrieval results. ")
             return False
 
-        print("[成功] 临时集合写入和检索正常。")
-        print(f"临时集合：{temp_collection}")
-        print(f"检索分数：{points[0].score:.4f}")
+        print("[OK] temporary collection andretrieval . ")
+        print(f"temporary collection:{temp_collection}")
+        print(f"retrieval score:{points[0].score:.4f}")
 
         return True
 
     except Exception as e:
-        print(f"[失败] Qdrant 临时写入 / 检索失败：{e}")
+        print(f"[failed] Qdrant temporary  / retrievalfailed:{e}")
         return False
 
     finally:
         try:
             client.delete_collection(temp_collection)
-            print(f"[完成] 已删除临时集合：{temp_collection}")
+            print(f"[completed] alreadydeletetemporary collection:{temp_collection}")
         except Exception:
             pass
 
@@ -303,7 +303,7 @@ def check_qdrant_temp_write_search(vector: list[float]) -> bool:
 
 def run_subprocess_check(title: str, command: list[str]) -> bool:
     print_step(title)
-    print("执行命令：", " ".join(command))
+    print("command:", " ".join(command))
     print("")
 
     env = os.environ.copy()
@@ -322,7 +322,7 @@ def run_subprocess_check(title: str, command: list[str]) -> bool:
             env=env,
         )
     except Exception as e:
-        print(f"[失败] 子进程执行异常：{e}")
+        print(f"[failed] subprocess execution exception:{e}")
         return False
 
     if result.stdout:
@@ -333,16 +333,16 @@ def run_subprocess_check(title: str, command: list[str]) -> bool:
         print(result.stderr)
 
     if result.returncode != 0:
-        print(f"[失败] 返回码：{result.returncode}")
+        print(f"[failed] return code:{result.returncode}")
         return False
 
-    print("[成功] 命令执行正常。")
+    print("[OK] commandexecute . ")
     return True
 
 
 def check_search_docs() -> bool:
     return run_subprocess_check(
-        title="6. 检查 search_docs.py 搜索功能",
+        title="6. check search_docs.py search function",
         command=[
             sys.executable,
             "search_docs.py",
@@ -350,18 +350,18 @@ def check_search_docs() -> bool:
             "Demo_Project",
             "--limit",
             "1",
-            "当前项目的第一阶段模型方案是什么？",
+            " purpose stagemodel is ？",
         ],
     )
 
 
 def check_ask_core() -> bool:
-    print_step("7. 检查 ask.py 核心检索 + 生成函数")
+    print_step("7. check ask.py coreretrieval +  ")
 
     try:
         import ask
 
-        question = "当前项目的第一阶段模型方案是什么？"
+        question = " purpose stagemodel is ？"
 
         contexts = ask.search_context(
             question=question,
@@ -370,59 +370,59 @@ def check_ask_core() -> bool:
         )
 
         if not contexts:
-            print("[失败] ask.search_context 未检索到资料。")
+            print("[failed] ask.search_context not retrieved records. ")
             return False
 
-        print(f"[成功] ask.search_context 检索到资料数量：{len(contexts)}")
+        print(f"[OK] ask.search_context retrieved recordscount:{len(contexts)}")
 
         answer = ask.generate_answer(question, contexts)
 
         if not answer:
-            print("[失败] ask.generate_answer 返回为空。")
+            print("[failed] ask.generate_answer  is empty. ")
             return False
 
-        print("[成功] ask.generate_answer 正常。")
-        print("回答预览：")
+        print("[OK] ask.generate_answer  . ")
+        print("answer preview:")
         print(answer[:500])
 
         return True
 
     except Exception as e:
-        print(f"[失败] ask.py 核心函数检查失败：{e}")
+        print(f"[failed] ask.py core checkfailed:{e}")
         return False
 
 
 def main():
-    print("个人项目秘书 + 数据知识库：全链路健康检查")
-    print(f"检查时间：{datetime.now().isoformat(timespec='seconds')}")
-    print(f"工作目录：{BASE_DIR}")
-    print(f"Python：{sys.executable}")
+    print("Personal Project Secretary + Knowledge Base:full-chain health check")
+    print(f"check time:{datetime.now().isoformat(timespec='seconds')}")
+    print(f"working directory:{BASE_DIR}")
+    print(f"Python:{sys.executable}")
 
     results = []
 
     ok = check_ollama_tags()
-    results.append(("Ollama API 与模型列表", ok))
+    results.append(("Ollama API andmodel list", ok))
 
     ok, vector = check_embedding()
-    results.append(("bge-m3 向量生成", ok))
+    results.append(("bge-m3 embedding generation", ok))
 
     ok = check_chat_generation()
-    results.append(("qwen3:8b 文本生成", ok))
+    results.append(("qwen3:8b  ", ok))
 
     ok = check_qdrant_collection()
-    results.append(("Qdrant 与主集合", ok))
+    results.append(("Qdrant andmain collection", ok))
 
     ok = check_qdrant_temp_write_search(vector)
-    results.append(("Qdrant 临时写入/检索/删除", ok))
+    results.append(("Qdrant temporary /retrieval/delete", ok))
 
     ok = check_search_docs()
-    results.append(("search_docs.py 搜索功能", ok))
+    results.append(("search_docs.py search function", ok))
 
     ok = check_ask_core()
-    results.append(("ask.py 核心检索+生成", ok))
+    results.append(("ask.py coreretrieval+ ", ok))
 
     print("\n" + "=" * 80)
-    print("全链路健康检查总结")
+    print("full-chain health checksummary")
     print("=" * 80)
 
     passed = 0
@@ -430,17 +430,17 @@ def main():
     for name, ok in results:
         if ok:
             passed += 1
-            print(f"[通过] {name}")
+            print(f"[passed] {name}")
         else:
-            print(f"[失败] {name}")
+            print(f"[failed] {name}")
 
     print("")
-    print(f"通过数量：{passed}/{len(results)}")
+    print(f"passed count:{passed}/{len(results)}")
 
     if passed == len(results):
-        print("结论：系统全链路健康，可以正常使用。")
+        print(" : , can . ")
     else:
-        print("结论：存在失败项，请根据上方日志修复。")
+        print(" :existsfailed items, please logs aboverepair. ")
 
 
 if __name__ == "__main__":

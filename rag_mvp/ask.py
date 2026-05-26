@@ -4,7 +4,7 @@ import os
 import requests
 from datetime import datetime
 
-# 避免 Python/qdrant-client 访问本机服务时走系统代理
+# Prevent Python/qdrant-client from using system proxies for local services.
 for key in [
     "HTTP_PROXY",
     "HTTPS_PROXY",
@@ -62,7 +62,7 @@ def embed_text(text: str) -> list[float]:
 
 def clean_model_response(text: str) -> str:
     """
-    清理 qwen3 可能输出的 <think>...</think> 思考内容。
+    Remove optional <think>...</think> reasoning blocks from qwen3 output.
     """
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     return text.strip()
@@ -83,7 +83,7 @@ def build_query_filter(
     tag: str | None = None,
 ):
     """
-    根据项目名、文档类型、资料大类、标签构建 Qdrant 过滤条件。
+    Build Qdrant filters from project, document type, category, and tag.
     """
     must_conditions = []
 
@@ -141,7 +141,7 @@ def search_context(
 
     if not collection_exists(client, COLLECTION_NAME):
         raise RuntimeError(
-            f"未找到集合 {COLLECTION_NAME}，请先运行 python ingest.py 完成入库。"
+            f" tocollection {COLLECTION_NAME}, please first  python ingest.py completed . "
         )
 
     query_vector = embed_text(question)
@@ -221,22 +221,22 @@ def generate_answer(question: str, contexts: list[dict]) -> str:
         context_text += "\n"
 
     prompt = f"""
-你是我的个人项目秘书和数据知识库助手。
+ is Personal Project SecretaryandKnowledge Base . 
 
-请严格根据下面提供的知识库资料回答问题。
-如果资料中没有明确答案，请说明“当前知识库资料不足，无法确认”，不要编造。
+please knowledge base answer based on recordsissue. 
+If the records do not contain a clear answer, pleasedescription'The current knowledge base records are insufficient to confirm this', do not fabricate information. 
 
-【知识库资料】
+[knowledge base records]
 {context_text}
 
-【用户问题】
+[user question]
 {question}
 
-【回答要求】
-1. 使用中文回答。
-2. 先给出直接结论。
-3. 再列出依据。
-4. 最后给出下一步建议。
+[answer requirements]
+1. Answer in English. 
+2. firstprovidedirect conclusion. 
+3. thenlistevidence. 
+4.  providenext-step recommendations. 
 """
 
     resp = requests.post(
@@ -255,10 +255,10 @@ def generate_answer(question: str, contexts: list[dict]) -> str:
 
 def save_qa_log(question: str, answer: str, contexts: list[dict]) -> None:
     """
-    保存本次问答记录到 Markdown 文件。
+    Save this QA interaction as a Markdown file.
 
-    这个函数会自动生成带 Frontmatter 的 Markdown 文件，
-    方便后续 ingest.py 重新入库，并通过 category / project / doc_type / tag 检索。
+    This function automatically creates a Markdown file with Frontmatter,
+    so it can be re-indexed by ingest.py and retrieved by category, project, doc_type, and tag.
     """
     QA_LOG_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -282,7 +282,7 @@ def save_qa_log(question: str, answer: str, contexts: list[dict]) -> None:
     lines.append("")
 
     # =========================
-    # 正文内容
+    # Body content
     # =========================
     lines.append("# Question and Answer Record")
     lines.append("")
@@ -296,22 +296,22 @@ def save_qa_log(question: str, answer: str, contexts: list[dict]) -> None:
     lines.append("")
 
     if not contexts:
-        lines.append("No relevant information was found.。")
+        lines.append("No relevant information was found.. ")
         lines.append("")
     else:
         for i, ctx in enumerate(contexts, start=1):
             lines.append(f"### data {i}")
             lines.append("")
-            lines.append(f"- Category：{ctx.get('category', '')}")
-            lines.append(f"- Project：{ctx.get('project', '')}")
+            lines.append(f"- Category:{ctx.get('category', '')}")
+            lines.append(f"- Project:{ctx.get('project', '')}")
             lines.append(f"- Document type: {ctx.get('doc_type', '')}")
-            lines.append(f"- Title：{ctx.get('title', '')}")
-            lines.append(f"- Tags：{ctx.get('tags', [])}")
-            lines.append(f"- File name：{ctx.get('file_name', '')}")
+            lines.append(f"- Title:{ctx.get('title', '')}")
+            lines.append(f"- Tags:{ctx.get('tags', [])}")
+            lines.append(f"- File name:{ctx.get('file_name', '')}")
             lines.append(f"- Source path: {ctx.get('source', '')}")
-            lines.append(f"- Chunk index：{ctx.get('chunk_index', '')}")
-            lines.append(f"- Score：{ctx.get('score', 0):.4f}")
-            lines.append(f"- Updated at：{ctx.get('updated_at', '')}")
+            lines.append(f"- Chunk index:{ctx.get('chunk_index', '')}")
+            lines.append(f"- Score:{ctx.get('score', 0):.4f}")
+            lines.append(f"- Updated at:{ctx.get('updated_at', '')}")
             lines.append("")
 
     lines.append("## Model Response")
@@ -321,7 +321,7 @@ def save_qa_log(question: str, answer: str, contexts: list[dict]) -> None:
 
     file_path.write_text("\n".join(lines), encoding="utf-8")
 
-    print(f"\n问答记录已保存：{file_path}")
+    print(f"\nQA logalreadysave:{file_path}")
 
 
 def main():
@@ -344,13 +344,13 @@ def main():
     parser.add_argument(
         "--doc-type",
         default=None,
-        help="Limit the document type to be searched, for example progress_log、model_decisions、issues、next_steps",
+        help="Limit the document type to be searched, for example progress_log, model_decisions, issues, next_steps",
     )
     
     parser.add_argument(
         "--category",
         default=None,
-        help="Limited data categories, for example project、knowledge、decision、problem、summary、attachment",
+        help="Limited data categories, for example project, knowledge, decision, problem, summary, attachment",
     )
     
     parser.add_argument(
@@ -371,23 +371,23 @@ def main():
     if args.question:
         question = " ".join(args.question).strip()
     else:
-        question = input("Please enter your question.：").strip()
+        question = input("Please enter your question.:").strip()
 
     if not question:
-        print("The question cannot be empty.。")
+        print("The question cannot be empty.. ")
         return
 
     if args.project:
-        print(f"Limited items：{args.project}")
+        print(f"Limited items:{args.project}")
 
     if args.doc_type:
-        print(f"Document type restrictions：{args.doc_type}")
+        print(f"Document type restrictions:{args.doc_type}")
         
     if args.category:
-        print(f"Limited data categories：{args.category}")
+        print(f"Limited data categories:{args.category}")
     
     if args.tag:
-        print(f"Limited Label：{args.tag}")
+        print(f"Limited Label:{args.tag}")
 
     contexts = search_context(
         question=question,
@@ -401,7 +401,7 @@ def main():
     print("\n=== Found data ===")
 
     if not contexts:
-        print("No relevant information was found.。")
+        print("No relevant information was found.. ")
     else:
         for i, ctx in enumerate(contexts, start=1):
             print(
