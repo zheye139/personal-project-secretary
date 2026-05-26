@@ -1,50 +1,68 @@
----
-title: Quick Start / 快速开始
-category: summary
-project: personal-project-secretary
-doc_type: quickstart
-tags: [quickstart, setup, bilingual, RAG, Ollama, Qdrant]
----
-
 # Quick Start / 快速开始
 
-This guide helps you run the local RAG MVP for the first time.  
-本文档用于帮助你第一次运行本地 RAG MVP。
+This guide helps you run **Personal Project Secretary + Knowledge Base Manager** with the example knowledge base.
 
-## 1. Repository and Knowledge Base / 代码仓库与知识库
+本文档用于帮助你使用示例知识库快速运行“个人项目秘书 + 知识库管理员系统”。
 
-Keep them separate.  
-建议将两者分开管理。
+---
+
+## 1. Repository and Knowledge Base / 代码仓库与知识库目录
+
+Keep the code repository and the private knowledge base separate.
+
+请将代码仓库和私人知识库目录分开管理。
 
 ```text
-Code repository / 代码仓库:
-D:\Projects\personal-project-secretary
+Code repository / 代码仓库：
+<your-repo-path>\personal-project-secretary
 
-Knowledge base / 私人知识库:
+Knowledge base / 知识库：
+<your-knowledge-root>
+```
+
+Windows example / Windows 示例：
+
+```text
+D:\Projects\personal-project-secretary
 D:\Personal_Knowledge_Base
 ```
 
-`KNOWLEDGE_ROOT` should point to the knowledge base, not the GitHub repository.  
-`KNOWLEDGE_ROOT` 应指向知识库目录，而不是 GitHub 仓库目录。
+---
 
-## 2. Install Ollama Models / 安装 Ollama 模型
+## 2. Copy Example Knowledge Base / 复制示例知识库
+
+```powershell
+Copy-Item .\examples\Personal_Knowledge_Base_Template D:\Personal_Knowledge_Base -Recurse
+```
+
+You can choose another location, but `KNOWLEDGE_ROOT` must point to that location.
+
+你可以选择其他目录，但 `KNOWLEDGE_ROOT` 必须指向该知识库目录。
+
+---
+
+## 3. Install Ollama Models / 安装 Ollama 模型
 
 ```powershell
 ollama pull qwen3:8b
 ollama pull bge-m3
+```
+
+Check installed models / 查看已安装模型：
+
+```powershell
 ollama list
 ```
 
-If Ollama shows `bge-m3:latest`, set `EMBED_MODEL = "bge-m3:latest"`.  
-如果 `ollama list` 显示 `bge-m3:latest`，则配置 `EMBED_MODEL = "bge-m3:latest"`。
+---
 
-## 3. Start Qdrant / 启动 Qdrant
+## 4. Start Qdrant / 启动 Qdrant
 
 ```powershell
 docker run -d --name pkb-qdrant -p 6333:6333 -v D:/Personal_Knowledge_Base/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
 ```
 
-If the container already exists / 如果容器已经存在：
+If the container already exists / 如果容器已存在：
 
 ```powershell
 docker start pkb-qdrant
@@ -53,11 +71,12 @@ docker start pkb-qdrant
 Check Qdrant / 检查 Qdrant：
 
 ```powershell
-curl.exe http://127.0.0.1:6333/
 curl.exe http://127.0.0.1:6333/collections
 ```
 
-## 4. Create Python Environment / 创建 Python 虚拟环境
+---
+
+## 5. Create Python Environment / 创建 Python 虚拟环境
 
 ```powershell
 cd <your-repo-path>\personal-project-secretary\rag_mvp
@@ -66,10 +85,9 @@ py -3.11 -m venv .venv
 pip install -r ..\requirements.txt
 ```
 
-Python 3.11 is recommended.  
-推荐使用 Python 3.11。
+---
 
-## 5. Create Local Config / 创建本地配置
+## 6. Create Local Config / 创建本地配置
 
 ```powershell
 Copy-Item .\config.example.py .\config.py
@@ -79,13 +97,9 @@ Edit `config.py` / 编辑 `config.py`：
 
 ```python
 KNOWLEDGE_ROOT = Path(r"D:\Personal_Knowledge_Base")
-COLLECTION_NAME = "personal_knowledge_base"
 ```
 
-## 6. Prepare Example Knowledge Base / 准备示例知识库
-
-You can copy the template from `examples/Personal_Knowledge_Base_Template` to your local knowledge base path.  
-可以将 `examples/Personal_Knowledge_Base_Template` 复制到本地知识库目录作为起点。
+---
 
 ## 7. Check Environment / 检查环境
 
@@ -93,54 +107,49 @@ You can copy the template from `examples/Personal_Knowledge_Base_Template` to yo
 python check_env.py
 ```
 
-Expected result / 预期结果：
+---
 
-```text
-Ollama is accessible.
-Qdrant is accessible.
-The configured chat model exists.
-The configured embedding model exists.
-```
-
-## 8. Index Documents / 入库文档
+## 8. Index Documents / 文档入库
 
 ```powershell
 python update_index.py
 ```
 
-## 9. Ask a Question / 提问
+---
+
+## 9. Ask a Question / 提问测试
 
 ```powershell
-python ask.py "What is the current project status?"
-python ask.py "当前项目进行到哪里了？"
+python ask.py --project Demo_Project "What is the current status of the demo project?"
 ```
 
-## 10. Search Without LLM / 只检索，不调用大模型
+中文也可以：
 
 ```powershell
-python search_docs.py "project status" --show-text
+python ask.py --project Demo_Project "Demo 项目当前状态是什么？"
 ```
 
-## 11. Generate Reports / 生成报告
+---
+
+## 10. Test M2 Personal Secretary Layer / 测试 M2 个人秘书能力
 
 ```powershell
-python project_report.py --project Demo_Project
-python time_report.py --project Demo_Project --mode weekly
-python update_index.py
+python next_action.py --project Demo_Project
+python project_brief.py --project Demo_Project
+python multi_project_status.py
+python priority_advisor.py
+python review_assistant.py --project Demo_Project
+python secretary_report.py
 ```
 
-## 12. Backup / 备份
+Run a milestone closeout check / 执行阶段封版检查：
 
 ```powershell
-python backup_kb.py
+python milestone_closeout.py --milestone M2
 ```
 
-## 13. Recommended Daily Flow / 推荐日常流程
+After generating reports, index them again / 生成报告后重新入库：
 
 ```powershell
-cd <your-repo-path>\personal-project-secretary\rag_mvp
-.\.venv\Scripts\activate
-docker start pkb-qdrant
-python status.py
 python update_index.py
 ```

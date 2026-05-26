@@ -63,3 +63,23 @@ PROJECT_REPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "project_reports"
 TIME_REPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "time_reports"
 
 BACKUP_DIR = KNOWLEDGE_ROOT / "99_System" / "backups"
+
+# =========================
+# Output directories - M2
+# =========================
+
+PROJECT_EXPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "project_exports"
+
+MILESTONE_REPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "milestone_reports"
+
+NEXT_ACTION_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "next_actions"
+
+PROJECT_BRIEF_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "project_briefs"
+
+MULTI_PROJECT_STATUS_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "multi_project_status"
+
+REVIEW_REPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "review_reports"
+
+SECRETARY_REPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "secretary_reports"
+
+MILESTONE_REPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "milestone_reports"

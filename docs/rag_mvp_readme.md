@@ -1,84 +1,126 @@
 ---
-title: rag_mvp Engineering Notes
+title: rag_mvp Engineering Notes / rag_mvp 工程说明
+created: 2026-05-26
 category: summary
 project: personal-project-secretary
 doc_type: rag_mvp_readme
-tags: [RAG, README, engineering, bilingual, Ollama, Qdrant]
+tags: [RAG, engineering, M1, M2, personal-secretary, Ollama, Qdrant]
 ---
 
-# rag_mvp Engineering Notes
+# rag_mvp Engineering Notes / rag_mvp 工程说明
 
-`rag_mvp` is the command-line core of Personal Project Secretary + Knowledge Base Manager.
+`rag_mvp` is the command-line engine of **Personal Project Secretary + Knowledge Base Manager**.
 
-`rag_mvp` 是本项目的命令行核心工程。
+`rag_mvp` 是“个人项目秘书 + 知识库管理员系统”的命令行核心工程。
 
-## Architecture / 架构
+---
+
+## 1. System Positioning / 系统定位
+
+M1 provides the local knowledge base manager toolbox.
+
+M1 提供本地知识库管理员工具箱。
 
 ```text
-Markdown knowledge base
-    ↓
-ingest.py parses Frontmatter and chunks documents
-    ↓
-Ollama bge-m3 creates embeddings
-    ↓
-Docker Qdrant stores vector index
-    ↓
-ask.py and search_docs.py retrieve relevant chunks
-    ↓
-Ollama qwen3:8b generates answers and reports
+Markdown records → embedding → Qdrant index → retrieval → qwen3:8b answer/report
 ```
 
-## Core Scripts / 核心脚本
+M2 adds the personal secretary analysis layer.
 
-- `check_env.py` - environment check / 环境检查
-- `ingest.py` - ingest Markdown documents / Markdown 入库
-- `ask.py` - RAG Q&A / RAG 问答
-- `search_docs.py` - search chunks without LLM / 不调用大模型的片段搜索
-- `add_note.py` - add Markdown notes / 新增 Markdown 记录
-- `inbox_import.py` - import Inbox notes / 导入 Inbox 记录
-- `update_index.py` - check + ingest + list documents / 一键检查、入库、列出文档
-- `status.py` - system overview / 系统状态总览
-- `project_report.py` - project report / 项目报告
-- `time_report.py` - daily or weekly report / 日报或周报
-- `backup_kb.py` - backup knowledge base / 备份知识库
-- `rebuild_index.py` - rebuild Qdrant index / 重建 Qdrant 索引
-- `validate_kb.py` - validate Markdown metadata / 校验 Markdown 元数据
-- `repair_frontmatter.py` - repair missing Frontmatter / 修复 Frontmatter
-- `export_project.py` - export project package / 导出项目资料包
+M2 增加个人项目秘书分析层。
 
-## Configuration / 配置
+```text
+next actions → project brief → multi-project status → priority advice → review → secretary report
+```
 
-Do not commit `config.py`. Commit `config.example.py` only.  
-不要提交 `config.py`，只提交 `config.example.py`。
+The project is not a model training project. It is a local knowledge workflow.
+
+本项目不是模型训练项目，而是本地知识工作流。
+
+---
+
+## 2. Core Principles / 核心原则
+
+1. Markdown is the primary data source.
+2. Qdrant is a rebuildable vector index.
+3. Ollama provides local model services.
+4. Python scripts are the automation layer.
+5. `config.py` is the configuration center.
+6. Generated outputs should be saved as Markdown and re-indexed.
+
+中文：
+
+1. Markdown 是主数据源。
+2. Qdrant 是可重建向量索引。
+3. Ollama 提供本地模型服务。
+4. Python 脚本是自动化工具层。
+5. `config.py` 是统一配置中心。
+6. 自动生成的报告应保存为 Markdown 并重新入库。
+
+---
+
+## 3. M1 Scripts / M1 脚本
+
+| Script | Purpose |
+|---|---|
+| `check_env.py` | Check local environment |
+| `ingest.py` | Index Markdown files |
+| `ask.py` | RAG question answering |
+| `search_docs.py` | Search chunks without chat model |
+| `list_docs.py` | List indexed documents |
+| `inspect_collection.py` | Inspect Qdrant collection |
+| `update_index.py` | Check environment, index documents, list documents |
+| `status.py` | Show system status |
+| `add_note.py` | Add Markdown notes |
+| `inbox_import.py` | Import Inbox Markdown files |
+| `project_report.py` | Generate project report |
+| `time_report.py` | Generate daily/weekly reports |
+| `backup_kb.py` | Backup knowledge base |
+| `rebuild_index.py` | Rebuild Qdrant index |
+| `validate_kb.py` | Validate Markdown metadata |
+| `repair_frontmatter.py` | Repair missing Frontmatter |
+| `export_project.py` | Export project package |
+| `health_check_full.py` | Full-chain health check |
+
+---
+
+## 4. M2 Scripts / M2 脚本
+
+| Script | Purpose | Typical output doc_type |
+|---|---|---|
+| `next_action.py` | Extract next actions | `next_action_report` |
+| `project_brief.py` | Generate a project brief | `project_brief` |
+| `multi_project_status.py` | Summarize multiple projects | `multi_project_status` |
+| `priority_advisor.py` | Suggest priorities | `priority_advice` |
+| `review_assistant.py` | Review project records | `review_report` |
+| `secretary_report.py` | Generate personal secretary report | `secretary_report` |
+| `milestone_closeout.py` | Run milestone closeout checks | `milestone_closeout` |
+
+---
+
+## 5. Recommended M2 Workflow / 推荐 M2 工作流
 
 ```powershell
-Copy-Item .\config.example.py .\config.py
+python update_index.py
+python next_action.py --project Demo_Project
+python project_brief.py --project Demo_Project
+python multi_project_status.py
+python priority_advisor.py
+python review_assistant.py --project Demo_Project
+python secretary_report.py
+python milestone_closeout.py --milestone M2
+python update_index.py
+python backup_kb.py
 ```
 
-`KNOWLEDGE_ROOT` should point to your private Markdown knowledge base.  
-`KNOWLEDGE_ROOT` 应指向私人 Markdown 知识库目录。
+---
 
-## Data Principle / 数据原则
+## 6. Future Optimization / 后续优化
 
-```text
-Markdown is the source of truth.
-Qdrant is a rebuildable index.
-Ollama is the local model service.
-Python scripts are the automation layer.
-```
+Incremental indexing and hybrid retrieval are intentionally not part of M2 closeout.
 
-中文总结：
+增量索引和混合检索不纳入 M2 封版范围。
 
-```text
-Markdown 是主数据源。
-Qdrant 是可重建索引。
-Ollama 是本地模型服务。
-Python 脚本是自动化工具层。
-```
+They are planned as later optimization work.
 
-## Development Notes / 开发说明
-
-- Keep scripts small and composable. / 脚本保持小而可组合。
-- Keep paths in `config.py`. / 路径集中放在 `config.py`。
-- Avoid committing private data. / 不提交私人数据。
-- Run `python update_index.py` after adding or editing Markdown. / 新增或修改 Markdown 后执行 `python update_index.py`。
+它们计划作为后续优化专项单独处理。

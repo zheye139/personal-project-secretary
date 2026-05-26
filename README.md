@@ -4,7 +4,22 @@ English | [中文说明](#中文说明)
 
 A local-first personal project secretary and knowledge base manager built with **Markdown**, **Ollama**, **Qdrant**, and **Python**.
 
-This project is a local RAG-based workflow for people who want to record, organize, retrieve, summarize, and report long-running project information. It is **not** a model training project. Your Markdown files remain the primary data source, and the vector database can be rebuilt at any time.
+This project is a local RAG-based workflow for people who want to record, organize, retrieve, summarize, review, and report long-running project information. It is **not** a model training project. Your Markdown files remain the primary data source, and the vector database can be rebuilt at any time.
+
+---
+
+## Current Release Target
+
+```text
+v0.2.0-local-secretary
+```
+
+This version includes:
+
+- M1: local RAG knowledge-base infrastructure
+- M2: personal secretary analysis layer
+
+It is still a local command-line toolbox. It does not require a Web UI or cloud service.
 
 ---
 
@@ -20,8 +35,14 @@ This project helps you build a local knowledge workflow for:
 - daily and weekly reports
 - project summaries
 - personal knowledge notes
+- next-action extraction
+- project briefs
+- multi-project status summaries
+- priority advice
+- project record reviews
+- daily personal secretary reports
 
-The system is designed around two roles:
+The system is designed around two roles.
 
 ### Knowledge Base Manager
 
@@ -32,7 +53,9 @@ Responsible for:
 - importing inbox notes
 - indexing Markdown files into Qdrant
 - validating knowledge-base structure
+- repairing missing Frontmatter
 - backing up and restoring the knowledge base
+- exporting project packages
 
 ### Personal Project Secretary
 
@@ -42,8 +65,12 @@ Responsible for:
 - retrieving project knowledge
 - generating project reports
 - generating daily and weekly reports
-- summarizing progress
-- helping plan next actions
+- extracting next actions
+- generating project briefs
+- summarizing multiple projects
+- giving priority advice
+- reviewing project records for missing information and risks
+- generating daily personal secretary reports
 
 ---
 
@@ -57,18 +84,6 @@ Responsible for:
 - Qdrant
 - Docker
 - PowerShell
-
----
-
-## Current Status
-
-Current release target:
-
-```text
-v0.1.0-local-rag-mvp
-```
-
-This version is a local command-line MVP. It focuses on the local knowledge-base workflow, not on a Web UI or cloud service.
 
 ---
 
@@ -88,7 +103,7 @@ D:\Personal_Knowledge_Base
 
 `KNOWLEDGE_ROOT` in `rag_mvp/config.py` should point to your private Markdown knowledge base, not to this GitHub repository.
 
-Recommended knowledge-base structure:
+Recommended private knowledge-base structure:
 
 ```text
 Personal_Knowledge_Base/
@@ -105,15 +120,21 @@ Personal_Knowledge_Base/
    └─ qdrant_storage/
 ```
 
+Do not publish your real private knowledge base, Qdrant storage, backups, or personal QA logs to GitHub.
+
 ---
 
 ## Example Knowledge Base
 
-A minimal example knowledge base is available in:
+A minimal example knowledge base is recommended under:
 
 ```text
 examples/Personal_Knowledge_Base_Template
 ```
+
+Use sample data for public demos instead of real personal project records.
+
+---
 
 ## Quick Start
 
@@ -156,6 +177,8 @@ Copy-Item .\config.example.py .\config.py
 Then edit `rag_mvp/config.py`:
 
 ```python
+from pathlib import Path
+
 KNOWLEDGE_ROOT = Path(r"D:\Personal_Knowledge_Base")
 ```
 
@@ -171,6 +194,7 @@ EMBED_MODEL = "bge-m3:latest"
 
 ```powershell
 python check_env.py
+python health_check_full.py
 ```
 
 ### 6. Index Markdown Documents
@@ -207,7 +231,7 @@ python backup_kb.py
 
 ---
 
-## Main Scripts
+## M1 Core Scripts
 
 | Script | Purpose |
 |---|---|
@@ -217,46 +241,109 @@ python backup_kb.py
 | `search_docs.py` | Search retrieved chunks without calling the chat model |
 | `add_note.py` | Add a Markdown note with Frontmatter |
 | `inbox_import.py` | Import Markdown files from `00_Inbox` |
+| `project_template.py` | Create a standard project folder and Markdown templates |
+| `archive_project.py` | Archive inactive or test projects safely |
 | `project_report.py` | Generate a project status report |
 | `time_report.py` | Generate daily or weekly reports |
 | `backup_kb.py` | Create a knowledge-base backup |
+| `export_project.py` | Export a project package |
+| `validate_kb.py` | Validate Markdown and Frontmatter quality |
+| `repair_frontmatter.py` | Repair missing or incomplete Frontmatter |
+| `rebuild_index.py` | Rebuild the Qdrant index safely |
+| `health_check_full.py` | Run a full system health check |
 | `status.py` | Show system status |
 | `update_index.py` | Run environment check, indexing, and document listing |
 
 ---
 
+## M2 Personal Secretary Scripts
+
+| Script | Purpose | Output doc_type |
+|---|---|---|
+| `next_action.py` | Extract next actions from project logs, plans, reports, and weekly reports | `next_action_report` |
+| `project_brief.py` | Generate a concise single-project brief | `project_brief` |
+| `multi_project_status.py` | Summarize multiple project statuses | `multi_project_status` |
+| `priority_advisor.py` | Provide project and task priority advice | `priority_advice` |
+| `review_assistant.py` | Review project records and identify missing information and risks | `review_report` |
+| `secretary_report.py` | Generate a daily personal secretary report | `secretary_report` |
+| `milestone_closeout.py` | Generate milestone closeout reports for M1/M2 and later phases | `milestone_report` |
+
+---
+
+## M2 Recommended Workflow
+
+Single project workflow:
+
+```powershell
+python next_action.py --project Demo_Project
+python project_brief.py --project Demo_Project
+python review_assistant.py --project Demo_Project
+python update_index.py
+```
+
+Multi-project workflow:
+
+```powershell
+python multi_project_status.py
+python priority_advisor.py
+python secretary_report.py
+python update_index.py
+```
+
+Milestone closeout:
+
+```powershell
+python health_check_full.py
+python milestone_closeout.py --milestone M2
+python update_index.py
+```
+
+---
+
 ## Documentation
+
+Recommended documentation files:
 
 - `docs/quickstart.md` - bilingual quick start
 - `docs/environment_setup.md` - environment setup
-- `docs/command_reference.md` - command reference
+- `docs/commands.md` - command reference
 - `docs/restore_guide.md` - recovery guide
-- `docs/rag_mvp_readme.md` - engineering notes
+- `docs/rag_mvp_README.md` - engineering notes
 - `docs/roadmap.md` - roadmap
 
 ---
 
 ## Roadmap
 
-Short term:
+Completed:
 
-- complete the local command-line toolbox
-- improve documentation and examples
-- make script outputs more friendly for public users
-
----
-
-## License
-
-MIT License
+```text
+M1: Local RAG knowledge-base infrastructure
+M2: Personal secretary analysis layer
+```
 
 ---
 
 # 中文说明
 
-这是一个本地优先的“个人项目秘书 + 知识库管理员”系统，使用 **Markdown** 作为主数据源，**Qdrant** 作为可重建向量索引，**Ollama** 本地模型用于问答、总结和项目报告生成。
+这是一个本地优先的“个人项目秘书 + 知识库管理员”系统，使用 **Markdown** 作为主数据源，**Qdrant** 作为可重建向量索引，**Ollama** 本地模型用于问答、总结、项目报告和个人秘书汇报生成。
 
 本项目不是模型训练项目，而是一个面向个人长期项目管理的本地 RAG 知识工作流。
+
+---
+
+## 当前发布目标
+
+```text
+v0.2.0-local-secretary
+```
+
+当前版本包含：
+
+- M1：本地 RAG 知识库基础设施
+- M2：个人秘书分析层
+
+该版本仍然是本地命令行工具箱，不依赖 Web UI 或云服务。
 
 ---
 
@@ -272,6 +359,12 @@ MIT License
 - 日报与周报
 - 项目总结
 - 个人知识笔记
+- 下一步行动提取
+- 项目简报
+- 多项目状态汇总
+- 优先级建议
+- 项目记录复盘
+- 个人秘书汇报
 
 ---
 
@@ -288,7 +381,9 @@ MIT License
 - 导入 Inbox 临时记录
 - 将 Markdown 文档入库到 Qdrant
 - 检查知识库结构
+- 修复缺失或不完整 Frontmatter
 - 备份与恢复知识库
+- 导出项目资料包
 
 ### 个人项目秘书
 
@@ -298,8 +393,12 @@ MIT License
 - 调取项目知识
 - 生成项目状态报告
 - 生成日报和周报
-- 总结项目进度
-- 辅助规划下一步行动
+- 提取下一步行动
+- 生成项目简报
+- 汇总多个项目状态
+- 给出优先级建议
+- 复盘项目记录中的遗漏和风险
+- 生成日常个人秘书汇报
 
 ---
 
@@ -316,6 +415,8 @@ D:\Personal_Knowledge_Base
 ```
 
 `rag_mvp/config.py` 中的 `KNOWLEDGE_ROOT` 应指向私人 Markdown 知识库目录，而不是 GitHub 代码仓库目录。
+
+不要把真实个人知识库、Qdrant 数据、备份文件和问答日志上传到 GitHub。
 
 ---
 
@@ -334,10 +435,103 @@ pip install -r ..\requirements.txt
 
 Copy-Item .\config.example.py .\config.py
 python check_env.py
+python health_check_full.py
 python update_index.py
 python ask.py "当前项目进行到哪里了？"
 ```
 
-## 当前阶段
+---
 
-当前版本是 `v0.1.0-local-rag-mvp`，属于本地命令行 MVP。
+## M1 核心脚本
+
+| 脚本 | 作用 |
+|---|---|
+| `check_env.py` | 检查 Ollama、模型、Qdrant 和集合状态 |
+| `ingest.py` | 解析 Markdown 并入库到 Qdrant |
+| `ask.py` | 执行 RAG 问答 |
+| `search_docs.py` | 搜索知识库片段，不调用聊天模型 |
+| `add_note.py` | 新增带 Frontmatter 的 Markdown 记录 |
+| `inbox_import.py` | 从 `00_Inbox` 导入 Markdown |
+| `project_template.py` | 创建标准项目目录和 Markdown 模板 |
+| `archive_project.py` | 安全归档暂停或测试项目 |
+| `project_report.py` | 生成项目状态报告 |
+| `time_report.py` | 生成日报或周报 |
+| `backup_kb.py` | 备份知识库 |
+| `export_project.py` | 导出项目资料包 |
+| `validate_kb.py` | 检查 Markdown 和 Frontmatter 规范 |
+| `repair_frontmatter.py` | 修复缺失或不完整 Frontmatter |
+| `rebuild_index.py` | 安全重建 Qdrant 索引 |
+| `health_check_full.py` | 全链路健康检查 |
+| `status.py` | 查看系统状态 |
+| `update_index.py` | 执行环境检查、入库和文档列表检查 |
+
+---
+
+## M2 个人秘书脚本
+
+| 脚本 | 作用 | 输出 doc_type |
+|---|---|---|
+| `next_action.py` | 提取项目下一步行动项 | `next_action_report` |
+| `project_brief.py` | 生成单项目简报 | `project_brief` |
+| `multi_project_status.py` | 汇总多个项目状态 | `multi_project_status` |
+| `priority_advisor.py` | 给出项目和任务优先级建议 | `priority_advice` |
+| `review_assistant.py` | 复盘项目记录，指出遗漏和风险 | `review_report` |
+| `secretary_report.py` | 生成日常个人秘书汇报 | `secretary_report` |
+| `milestone_closeout.py` | 为 M1/M2 和后续阶段生成阶段封版报告 | `milestone_report` |
+
+---
+
+## M2 推荐工作流
+
+单项目工作流：
+
+```powershell
+python next_action.py --project Demo_Project
+python project_brief.py --project Demo_Project
+python review_assistant.py --project Demo_Project
+python update_index.py
+```
+
+多项目工作流：
+
+```powershell
+python multi_project_status.py
+python priority_advisor.py
+python secretary_report.py
+python update_index.py
+```
+
+阶段封版：
+
+```powershell
+python health_check_full.py
+python milestone_closeout.py --milestone M2
+python update_index.py
+```
+
+---
+
+## 文档
+
+推荐文档文件：
+
+- `docs/quickstart.md`：双语快速开始
+- `docs/environment_setup.md`：环境安装说明
+- `docs/commands.md`：命令速查表
+- `docs/restore_guide.md`：恢复流程
+- `docs/rag_mvp_README.md`：工程说明
+- `docs/roadmap.md`：路线图
+
+---
+
+## 路线图
+
+已完成：
+
+```text
+M1：本地 RAG 知识库基础设施
+M2：个人秘书分析层
+```
+
+---
+
