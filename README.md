@@ -11,13 +11,14 @@ This project is a local RAG-based workflow for people who want to record, organi
 ## Current Release Target
 
 ```text
-v0.2.0-local-secretary
+v0.3.0-local-index-retrieval
 ```
 
 This version includes:
 
 - M1: local RAG knowledge-base infrastructure
 - M2: personal secretary analysis layer
+- M3: index and retrieval optimization layer
 
 It is still a local command-line toolbox. It does not require a Web UI or cloud service.
 
@@ -41,6 +42,10 @@ This project helps you build a local knowledge workflow for:
 - priority advice
 - project record reviews
 - daily personal secretary reports
+- incremental indexing
+- single-file and project-level index updates
+- keyword and hybrid retrieval
+- retrieval quality evaluation
 
 The system is designed around two roles.
 
@@ -56,6 +61,8 @@ Responsible for:
 - repairing missing Frontmatter
 - backing up and restoring the knowledge base
 - exporting project packages
+- maintaining incremental index state
+- rebuilding Qdrant from Markdown when needed
 
 ### Personal Project Secretary
 
@@ -298,6 +305,76 @@ python milestone_closeout.py --milestone M2
 python update_index.py
 ```
 
+
+---
+
+## M3 Index and Retrieval Optimization Scripts
+
+| Script / File | Purpose | Notes |
+|---|---|---|
+| `manifest_utils.py` | Manage `index_manifest.json` | Tracks Markdown fingerprints, chunk count, and Qdrant point ids |
+| `incremental_index.py` | Core incremental indexing engine | Handles added, changed, deleted, and unchanged files |
+| `update_index.py` | Daily index update entry | Defaults to incremental indexing |
+| `rebuild_index.py` | Full Qdrant rebuild entry | Deletes collection, resets manifest, and rebuilds from Markdown |
+| `search_docs.py` | Search chunks with vector / keyword / hybrid modes | Supports `--mode vector`, `--mode keyword`, `--mode hybrid` |
+| `ask.py` | RAG Q&A with selectable retrieval mode | Supports `--search-mode vector`, `--search-mode keyword`, `--search-mode hybrid` |
+| `retrieval_eval.py` | Retrieval quality evaluation | Reports Top1 / Top3 / Top5 hit rates |
+| `retrieval_eval.json` | Retrieval evaluation test set | Stored under `99_System/eval` |
+
+---
+
+## M3 Recommended Workflow
+
+Daily incremental update:
+
+```powershell
+python update_index.py
+```
+
+Single-file update:
+
+```powershell
+python update_index.py --file "01_Projects/Demo_Project/progress_log.md"
+python update_index.py --file "01_Projects/Demo_Project/progress_log.md" --force-file
+```
+
+Project-level update:
+
+```powershell
+python update_index.py --project Demo_Project
+python update_index.py --project Demo_Project --force-project
+```
+
+Full rebuild:
+
+```powershell
+python rebuild_index.py
+python rebuild_index.py --execute
+```
+
+Search modes:
+
+```powershell
+python search_docs.py --mode vector "current project status" --show-text
+python search_docs.py --mode keyword "update_index.py" --show-text
+python search_docs.py --mode hybrid "M3 incremental indexing" --show-text
+```
+
+RAG Q&A retrieval modes:
+
+```powershell
+python ask.py --search-mode vector "What is the project status?"
+python ask.py --search-mode keyword "What does update_index.py do?"
+python ask.py --search-mode hybrid "What did M3 improve?"
+```
+
+Retrieval evaluation:
+
+```powershell
+python retrieval_eval.py --mode all
+```
+
+
 ---
 
 ## Documentation
@@ -306,9 +383,9 @@ Recommended documentation files:
 
 - `docs/quickstart.md` - bilingual quick start
 - `docs/environment_setup.md` - environment setup
-- `docs/commands.md` - command reference
+- `docs/command_reference.md` - command reference
 - `docs/restore_guide.md` - recovery guide
-- `docs/rag_mvp_README.md` - engineering notes
+- `docs/rag_mvp_readme.md` - engineering notes
 - `docs/roadmap.md` - roadmap
 
 ---
@@ -320,6 +397,7 @@ Completed:
 ```text
 M1: Local RAG knowledge-base infrastructure
 M2: Personal secretary analysis layer
+M3: Index and retrieval optimization layer
 ```
 
 ---
@@ -335,13 +413,14 @@ M2: Personal secretary analysis layer
 ## 当前发布目标
 
 ```text
-v0.2.0-local-secretary
+v0.3.0-local-index-retrieval
 ```
 
 当前版本包含：
 
 - M1：本地 RAG 知识库基础设施
 - M2：个人秘书分析层
+- M3：索引与检索能力优化层
 
 该版本仍然是本地命令行工具箱，不依赖 Web UI 或云服务。
 
@@ -365,6 +444,10 @@ v0.2.0-local-secretary
 - 优先级建议
 - 项目记录复盘
 - 个人秘书汇报
+- 增量索引
+- 单文件和项目级索引更新
+- 关键词检索与混合检索
+- 检索质量评估
 
 ---
 
@@ -481,6 +564,74 @@ python ask.py "当前项目进行到哪里了？"
 
 ---
 
+## M3 索引与检索优化脚本
+
+| 脚本 / 文件 | 作用 | 说明 |
+|---|---|---|
+| `manifest_utils.py` | 管理 `index_manifest.json` | 记录 Markdown 文件指纹、片段数量和 Qdrant point ids |
+| `incremental_index.py` | 增量索引核心引擎 | 处理 added、changed、deleted、unchanged 文件 |
+| `update_index.py` | 日常索引更新入口 | 默认执行增量更新 |
+| `rebuild_index.py` | 全量重建入口 | 删除 collection、重置 manifest、从 Markdown 重新入库 |
+| `search_docs.py` | 支持 vector / keyword / hybrid 的检索工具 | 支持 `--mode vector`、`--mode keyword`、`--mode hybrid` |
+| `ask.py` | 支持检索模式选择的 RAG 问答入口 | 支持 `--search-mode vector`、`--search-mode keyword`、`--search-mode hybrid` |
+| `retrieval_eval.py` | 检索质量评估脚本 | 输出 Top1 / Top3 / Top5 命中率 |
+| `retrieval_eval.json` | 检索评估测试集 | 位于 `99_System/eval` |
+
+---
+
+## M3 推荐工作流
+
+日常增量更新：
+
+```powershell
+python update_index.py
+```
+
+单文件更新：
+
+```powershell
+python update_index.py --file "01_Projects/Demo_Project/progress_log.md"
+python update_index.py --file "01_Projects/Demo_Project/progress_log.md" --force-file
+```
+
+项目级更新：
+
+```powershell
+python update_index.py --project Demo_Project
+python update_index.py --project Demo_Project --force-project
+```
+
+全量重建：
+
+```powershell
+python rebuild_index.py
+python rebuild_index.py --execute
+```
+
+三种检索模式：
+
+```powershell
+python search_docs.py --mode vector "当前项目状态" --show-text
+python search_docs.py --mode keyword "update_index.py" --show-text
+python search_docs.py --mode hybrid "M3 增量索引" --show-text
+```
+
+RAG 问答检索模式：
+
+```powershell
+python ask.py --search-mode vector "当前项目状态是什么？"
+python ask.py --search-mode keyword "update_index.py 的作用是什么？"
+python ask.py --search-mode hybrid "M3 阶段改进了什么？"
+```
+
+检索评估：
+
+```powershell
+python retrieval_eval.py --mode all
+```
+
+---
+
 ## M2 推荐工作流
 
 单项目工作流：
@@ -517,9 +668,9 @@ python update_index.py
 
 - `docs/quickstart.md`：双语快速开始
 - `docs/environment_setup.md`：环境安装说明
-- `docs/commands.md`：命令速查表
+- `docs/command_reference.md`：命令速查表
 - `docs/restore_guide.md`：恢复流程
-- `docs/rag_mvp_README.md`：工程说明
+- `docs/rag_mvp_readme.md`：工程说明
 - `docs/roadmap.md`：路线图
 
 ---
@@ -531,7 +682,7 @@ python update_index.py
 ```text
 M1：本地 RAG 知识库基础设施
 M2：个人秘书分析层
+M3：索引与检索能力优化层
 ```
 
 ---
-

@@ -4,7 +4,7 @@ created: 2026-05-26
 category: summary
 project: personal-project-secretary
 doc_type: environment_setup
-tags: [environment, Python, Ollama, Qdrant, Docker, RAG, M1, M2]
+tags: [environment, Python, Ollama, Qdrant, Docker, RAG, M1, M2, M3, retrieval]
 ---
 
 # Environment Setup / 环境安装说明
@@ -161,7 +161,7 @@ MULTI_PROJECT_STATUS_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "multi_project_stat
 PRIORITY_ADVICE_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "priority_advice"
 REVIEW_REPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "review_reports"
 SECRETARY_REPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "secretary_reports"
-MILESTONE_CLOSEOUT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "milestone_closeouts"
+MILESTONE_REPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "milestone_reports"
 ```
 
 If your local script uses different directory variable names, keep them consistent with `config.py`.
@@ -223,9 +223,94 @@ After report generation / 生成报告后：
 python update_index.py
 ```
 
+
 ---
 
-## 10. Common Problems / 常见问题
+## 10. M3 Configuration and Validation / M3 配置与验证
+
+M3 adds incremental indexing, search modes, and retrieval evaluation.
+
+M3 增加增量索引、检索模式和检索评估能力。
+
+Add these paths to `config.py` if they are not already present / 如果本地 `config.py` 尚未包含，请增加：
+
+```python
+INDEX_MANIFEST_PATH = KNOWLEDGE_ROOT / "99_System" / "index_manifest.json"
+
+EVAL_DIR = KNOWLEDGE_ROOT / "99_System" / "eval"
+RETRIEVAL_EVAL_PATH = EVAL_DIR / "retrieval_eval.json"
+
+RETRIEVAL_EVAL_REPORT_DIR = KNOWLEDGE_ROOT / "05_Summaries" / "retrieval_eval_reports"
+```
+
+Create eval directory / 创建评估目录：
+
+```powershell
+New-Item -ItemType Directory -Force "<your-knowledge-root>\99_System\eval"
+```
+
+Validate M3 scripts / 验证 M3 脚本：
+
+```powershell
+python -m py_compile manifest_utils.py incremental_index.py update_index.py rebuild_index.py search_docs.py ask.py retrieval_eval.py milestone_closeout.py
+python -m tabnanny manifest_utils.py incremental_index.py update_index.py rebuild_index.py search_docs.py ask.py retrieval_eval.py milestone_closeout.py
+```
+
+Initialize and scan manifest / 初始化和扫描 manifest：
+
+```powershell
+python manifest_utils.py --init
+python manifest_utils.py --scan
+```
+
+Run incremental indexing / 执行增量索引：
+
+```powershell
+python update_index.py --dry-run
+python update_index.py
+```
+
+Run M3 retrieval checks / 执行 M3 检索检查：
+
+```powershell
+python search_docs.py --mode keyword "update_index.py" --show-text
+python search_docs.py --mode hybrid "M3 incremental indexing" --show-text
+python ask.py --search-mode hybrid "What did M3 improve?"
+```
+
+Run retrieval evaluation / 执行检索评估：
+
+```powershell
+python retrieval_eval.py --mode all
+python update_index.py --project Personal_Project_Assistant
+```
+
+Run M3 closeout / 执行 M3 阶段封版：
+
+```powershell
+python milestone_closeout.py --milestone M3
+```
+
+### Qdrant shard error recovery / Qdrant shard 错误恢复
+
+If Qdrant reports `OffsetOutOfBounds` or cannot load a local shard, treat Qdrant as a rebuildable index.
+
+如果 Qdrant 报 `OffsetOutOfBounds` 或无法加载 local shard，应将 Qdrant 视为可重建索引处理。
+
+Recommended recovery / 推荐恢复方式：
+
+```powershell
+python rebuild_index.py --execute --skip-check --skip-snapshot
+```
+
+If collection deletion also fails, rebuild the storage directory after backing it up.
+
+如果 collection 删除也失败，请先备份并重建 storage 目录。
+
+
+---
+
+## 11. Common Problems / 常见问题
 
 ### Ollama cannot connect / Ollama 无法连接
 

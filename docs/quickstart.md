@@ -153,3 +153,39 @@ After generating reports, index them again / 生成报告后重新入库：
 ```powershell
 python update_index.py
 ```
+
+
+---
+
+## 11. Test M3 Index and Retrieval Layer / 测试 M3 索引与检索能力
+
+Run incremental index / 执行增量索引：
+
+```powershell
+python update_index.py
+```
+
+Run keyword and hybrid search / 执行关键词检索和混合检索：
+
+```powershell
+python search_docs.py --mode keyword "update_index.py" --show-text
+python search_docs.py --mode hybrid "M3 incremental indexing" --show-text
+```
+
+Ask with hybrid retrieval / 使用混合检索问答：
+
+```powershell
+python ask.py --search-mode hybrid "What did M3 improve?"
+```
+
+Run retrieval evaluation / 执行检索评估：
+
+```powershell
+python retrieval_eval.py --mode all
+```
+
+Close out M3 / M3 阶段封版：
+
+```powershell
+python milestone_closeout.py --milestone M3
+```

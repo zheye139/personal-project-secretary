@@ -4,7 +4,7 @@ created: 2026-05-26
 category: summary
 project: personal-project-secretary
 doc_type: rag_mvp_readme
-tags: [RAG, engineering, M1, M2, personal-secretary, Ollama, Qdrant]
+tags: [RAG, engineering, M1, M2, M3, personal-secretary, indexing, retrieval, Ollama, Qdrant]
 ---
 
 # rag_mvp Engineering Notes / rag_mvp 工程说明
@@ -31,6 +31,14 @@ M2 增加个人项目秘书分析层。
 
 ```text
 next actions → project brief → multi-project status → priority advice → review → secretary report
+```
+
+M3 adds the index and retrieval optimization layer.
+
+M3 增加索引与检索能力优化层。
+
+```text
+index manifest → incremental index → single-file/project update → keyword search → hybrid search → retrieval evaluation
 ```
 
 The project is not a model training project. It is a local knowledge workflow.
@@ -113,14 +121,82 @@ python update_index.py
 python backup_kb.py
 ```
 
+
 ---
 
-## 6. Future Optimization / 后续优化
+## 6. M3 Scripts / M3 脚本
 
-Incremental indexing and hybrid retrieval are intentionally not part of M2 closeout.
+| Script / File | Purpose | Typical output |
+|---|---|---|
+| `manifest_utils.py` | Manage `index_manifest.json` and detect file changes | Runtime state file |
+| `incremental_index.py` | Core incremental indexing engine | Qdrant points + manifest updates |
+| `update_index.py` | Daily incremental update entry | Updated Qdrant collection |
+| `rebuild_index.py` | Full index rebuild entry | Rebuilt Qdrant collection |
+| `search_docs.py` | Search in vector, keyword, or hybrid mode | Terminal results |
+| `ask.py` | RAG Q&A with configurable retrieval mode | `qa_log` |
+| `retrieval_eval.py` | Evaluate retrieval quality | `retrieval_eval_report` |
+| `retrieval_eval.json` | Evaluation test cases | JSON test set |
 
-增量索引和混合检索不纳入 M2 封版范围。
+---
 
-They are planned as later optimization work.
+## 7. Recommended M3 Workflow / 推荐 M3 工作流
 
-它们计划作为后续优化专项单独处理。
+Daily update / 日常更新：
+
+```powershell
+python update_index.py
+```
+
+Single-file update / 单文件更新：
+
+```powershell
+python update_index.py --file "01_Projects/Demo_Project/progress_log.md"
+```
+
+Project-level update / 项目级更新：
+
+```powershell
+python update_index.py --project Demo_Project
+```
+
+Search / 检索：
+
+```powershell
+python search_docs.py --mode vector "project status" --show-text
+python search_docs.py --mode keyword "update_index.py" --show-text
+python search_docs.py --mode hybrid "incremental indexing" --show-text
+```
+
+Question answering / 问答：
+
+```powershell
+python ask.py --search-mode hybrid "What did M3 improve?"
+```
+
+Evaluation / 评估：
+
+```powershell
+python retrieval_eval.py --mode all
+```
+
+Closeout / 阶段封版：
+
+```powershell
+python milestone_closeout.py --milestone M3
+```
+
+---
+
+## 8. M3 Design Notes / M3 设计说明
+
+M3 keeps Markdown as the source of truth and treats Qdrant as a rebuildable index.
+
+M3 继续坚持 Markdown 是主数据源，Qdrant 是可重建索引。
+
+`index_manifest.json` is a local runtime file. It should not be committed to GitHub because it may contain local file state and Qdrant point ids.
+
+`index_manifest.json` 是本地运行状态文件，不建议提交到 GitHub，因为其中可能包含本地文件状态和 Qdrant point ids。
+
+Use `update_index.py` for daily work and `rebuild_index.py --execute` when the collection must be rebuilt.
+
+日常使用 `update_index.py`，需要彻底重建索引时使用 `rebuild_index.py --execute`。

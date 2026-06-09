@@ -4,7 +4,7 @@ created: 2026-05-26
 category: summary
 project: personal-project-secretary
 doc_type: restore_guide
-tags: [restore, migration, backup, RAG, Qdrant, Ollama, M1, M2]
+tags: [restore, migration, backup, RAG, Qdrant, Ollama, M1, M2, M3, retrieval]
 ---
 
 # Restore Guide / 恢复流程
@@ -180,9 +180,61 @@ Then / 然后：
 python update_index.py
 ```
 
+
 ---
 
-## 11. Backup After Restore / 恢复后备份
+## 11. Restore M3 Index and Retrieval Features / 恢复 M3 索引与检索能力
+
+After restoring Markdown files and Python dependencies, rebuild the Qdrant index from Markdown.
+
+恢复 Markdown 文件和 Python 依赖后，应从 Markdown 重新构建 Qdrant 索引。
+
+Recommended sequence / 推荐流程：
+
+```powershell
+python manifest_utils.py --init --overwrite
+python update_index.py --force-all --skip-check
+python list_docs.py
+python health_check_full.py
+```
+
+Validate search modes / 验证检索模式：
+
+```powershell
+python search_docs.py --mode vector "project status" --show-text
+python search_docs.py --mode keyword "update_index.py" --show-text
+python search_docs.py --mode hybrid "M3 incremental indexing" --show-text
+```
+
+Validate ask retrieval modes / 验证问答检索模式：
+
+```powershell
+python ask.py --search-mode vector "What is the project status?"
+python ask.py --search-mode keyword "What does update_index.py do?"
+python ask.py --search-mode hybrid "What did M3 improve?"
+```
+
+Validate retrieval evaluation / 验证检索评估：
+
+```powershell
+python retrieval_eval.py --mode all
+python update_index.py --project Personal_Project_Assistant
+```
+
+If Qdrant shard loading fails, for example `OffsetOutOfBounds`, Qdrant storage may be damaged. Back up the storage directory and rebuild the index from Markdown.
+
+如果 Qdrant shard 加载失败，例如出现 `OffsetOutOfBounds`，可能是 Qdrant 本地 storage 损坏。请先备份 storage 目录，再从 Markdown 重建索引。
+
+Recovery command / 恢复命令：
+
+```powershell
+python rebuild_index.py --execute --skip-check --skip-snapshot
+```
+
+
+---
+
+## 12. Backup After Restore / 恢复后备份
 
 ```powershell
 python backup_kb.py
@@ -190,7 +242,7 @@ python backup_kb.py
 
 ---
 
-## 12. Notes / 注意事项
+## 13. Notes / 注意事项
 
 - Do not restore `.venv`; recreate it.
 - Do not treat Qdrant as the only source of truth.

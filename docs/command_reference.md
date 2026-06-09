@@ -4,14 +4,14 @@ created: 2026-05-26
 category: summary
 project: personal-project-secretary
 doc_type: command_reference
-tags: [commands, PowerShell, RAG, Qdrant, Ollama, Python, M1, M2, personal-secretary]
+tags: [commands, PowerShell, RAG, Qdrant, Ollama, Python, M1, M2, M3, personal-secretary, retrieval]
 ---
 
 # Command Reference / 命令速查表
 
-This document lists common commands for the local knowledge base manager and M2 personal secretary layer.
+This document lists common commands for the local knowledge base manager, M2 personal secretary layer, and M3 index/retrieval optimization layer.
 
-本文档集中记录本地知识库管理员工具箱和 M2 个人秘书层的常用命令。
+本文档集中记录本地知识库管理员工具箱、M2 个人秘书层和 M3 索引检索优化层的常用命令。
 
 ---
 
@@ -362,9 +362,155 @@ python secretary_report.py --help
 python milestone_closeout.py --help
 ```
 
+
 ---
 
-## 12. Backup, Export, and Maintenance / 备份、导出与维护
+## 12. M3 Index and Retrieval Optimization / M3 索引与检索优化
+
+### 12.1 Incremental index / 增量索引
+
+Daily update / 日常更新：
+
+```powershell
+python update_index.py
+```
+
+Dry run only / 只预览变化：
+
+```powershell
+python update_index.py --dry-run
+```
+
+Force all Markdown files to rebuild / 强制全部 Markdown 重新入库：
+
+```powershell
+python update_index.py --force-all
+```
+
+### 12.2 Single-file update / 单文件更新
+
+```powershell
+python update_index.py --file "01_Projects/Demo_Project/progress_log.md"
+```
+
+Force rebuild one file / 强制重建单个文件：
+
+```powershell
+python update_index.py --file "01_Projects/Demo_Project/progress_log.md" --force-file
+```
+
+### 12.3 Project-level update / 项目级更新
+
+```powershell
+python update_index.py --project Demo_Project
+```
+
+Force rebuild one project / 强制重建指定项目：
+
+```powershell
+python update_index.py --project Demo_Project --force-project
+```
+
+### 12.4 Full rebuild / 全量重建
+
+Preview / 预览：
+
+```powershell
+python rebuild_index.py
+```
+
+Execute / 执行：
+
+```powershell
+python rebuild_index.py --execute
+```
+
+If Qdrant collection is damaged / 如果 Qdrant collection 已损坏：
+
+```powershell
+python rebuild_index.py --execute --skip-check --skip-snapshot
+```
+
+### 12.5 Search modes / 检索模式
+
+Vector semantic search / 向量语义检索：
+
+```powershell
+python search_docs.py --mode vector "project status" --show-text
+```
+
+Keyword search / 关键词检索：
+
+```powershell
+python search_docs.py --mode keyword "update_index.py" --show-text
+```
+
+Hybrid search / 混合检索：
+
+```powershell
+python search_docs.py --mode hybrid "M3 incremental indexing" --show-text
+```
+
+Adjust hybrid weights / 调整混合检索权重：
+
+```powershell
+python search_docs.py --mode hybrid "update_index.py" --vector-weight 0.3 --keyword-weight 0.7 --show-text
+```
+
+### 12.6 Ask with retrieval modes / 使用不同检索模式问答
+
+```powershell
+python ask.py --search-mode vector "What is the current project status?"
+python ask.py --search-mode keyword "What does update_index.py do?"
+python ask.py --search-mode hybrid "What did M3 improve?"
+```
+
+With filters / 配合过滤条件：
+
+```powershell
+python ask.py --project Demo_Project --search-mode hybrid "What should I do next?"
+python ask.py --doc-type progress_log --search-mode keyword "M3.7"
+python ask.py --category problem --search-mode hybrid "OffsetOutOfBounds"
+```
+
+### 12.7 Retrieval evaluation / 检索评估
+
+Run all modes / 评估全部模式：
+
+```powershell
+python retrieval_eval.py --mode all
+```
+
+Run one mode / 评估单一模式：
+
+```powershell
+python retrieval_eval.py --mode vector
+python retrieval_eval.py --mode keyword
+python retrieval_eval.py --mode hybrid
+```
+
+Custom TopK / 自定义 TopK：
+
+```powershell
+python retrieval_eval.py --mode all --top-k 1,3,5,10 --limit 10
+```
+
+Index generated evaluation reports / 将评估报告重新入库：
+
+```powershell
+python update_index.py --project Personal_Project_Assistant
+```
+
+### 12.8 M3 closeout / M3 阶段封版
+
+```powershell
+python milestone_closeout.py --milestone M3
+```
+
+
+---
+
+## 13. Backup, Export, and Maintenance / 备份、导出与维护
 
 Backup knowledge base / 备份知识库：
 
