@@ -45,6 +45,20 @@ The project is not a model training project. It is a local knowledge workflow.
 
 本项目不是模型训练项目，而是本地知识工作流。
 
+M4 adds the local console, API, and Web interface layer.
+
+```text
+command registry -> launcher -> project discovery -> local FastAPI API -> local Web pages
+```
+
+Current positioning:
+
+```text
+Local-first personal project secretary and knowledge base assistant.
+```
+
+The project remains a local tool. It is not a public network service and is not designed for cloud deployment by default.
+
 ---
 
 ## 2. Core Principles / 核心原则
@@ -198,5 +212,44 @@ M3 继续坚持 Markdown 是主数据源，Qdrant 是可重建索引。
 `index_manifest.json` 是本地运行状态文件，不建议提交到 GitHub，因为其中可能包含本地文件状态和 Qdrant point ids。
 
 Use `update_index.py` for daily work and `rebuild_index.py --execute` when the collection must be rebuilt.
+
+---
+
+## 9. M4 Local Console, API, and Web Interface / M4 本地控制台、API 和 Web 界面
+
+M4 adds a local interaction layer for the existing M1-M3 capabilities.
+
+M4 为已有的 M1-M3 能力新增了一个本地交互层。
+
+| Component                  | Purpose                                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `command_registry.py`      | Registry of available commands and metadata / 可用命令及其元数据的注册表                                           |
+| `launcher.py`              | Local terminal menu / 本地终端菜单                                                                          |
+| `project_discovery.py`     | Discovery of projects, categories, doc types, tags, files, and summary data / 发现项目、分类、文档类型、标签、文件和摘要数据 |
+| `api_app.py`               | Local FastAPI API and HTML route server / 本地 FastAPI API 和 HTML 路由服务器                                 |
+| `run_api.ps1`              | PowerShell startup script for the local API/Web server / 本地 API/Web 服务器的 PowerShell 启动脚本              |
+| `web/index.html`           | Local homepage / 本地首页                                                                                 |
+| `web/search.html`          | Search page / Search页面                                                                                |
+| `web/ask.html`             | Ask page / Ask页面                                                                                      |
+| `web/diagnostics.html`     | Local diagnostics page / 本地诊断页面                                                                       |
+| `web/troubleshooting.html` | Local troubleshooting guide / 本地故障排查指南                                                                |
+
+M4 Web/API capabilities / M4 Web/API 能力:
+
+- Local Web homepage. / 本地 Web 首页。
+- Search API and Search page. / Search API 和 Search 页面。
+- Ask API and Ask page. / Ask API 和 Ask 页面。
+- Diagnostics page for API, Qdrant, Ollama, Discovery, and Commands. / 用于 API、Qdrant、Ollama、Discovery 和 Commands 的 Diagnostics 页面。
+- Troubleshooting page for local service checks. / 用于本地服务检查的 Troubleshooting 页面。
+- FastAPI automatic docs at `/docs`. / FastAPI 自动文档位于 `/docs`。
+- API overview at `/api`. / API 概览位于 `/api`。
+
+Safety boundary / 安全边界:
+
+- The local API binds to `127.0.0.1` by default. / 本地 API 默认绑定到 `127.0.0.1`。
+- The Web/API layer is not intended for public-network exposure. / Web/API 层不用于公网暴露。
+- Web pages do not execute `update_index`, `rebuild`, `backup`, or `add_note`. / Web 页面不会执行 `update_index`、`rebuild`、`backup` 或 `add_note`。
+- Search does not write to the knowledge base. / Search 不会写入知识库。
+- Ask does not save QA logs by default. / Ask 默认不会保存 QA 日志。
 
 日常使用 `update_index.py`，需要彻底重建索引时使用 `rebuild_index.py --execute`。

@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+  <title>Ask Knowledge Base</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      font-synthesis: none;
+      --page: #f4f5f2;
+      --surface: #ffffff;
+      --surface-soft: #f8f9f7;
+      --ink: #20231f;
+      --muted: #686e67;
+      --line: #d9ddd6;
+      --strong-line: #b7bdb5;
+      --green: #1e7048;
+      --amber: #8a5b12;
+      --amber-soft: #fff4d8;
+      --focus: #1769aa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--page);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: #165f91;
+      text-underline-offset: 3px;
+    }
+
+    a:focus-visible,
+    button:focus-visible,
+    textarea:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--strong-line);
+      background: var(--surface);
+    }
+
+    .topbar-inner,
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar-inner {
+      display: flex;
+      min-height: 76px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 720;
+      line-height: 1.2;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mode {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      white-space: nowrap;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .mode-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .topnav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topnav a {
+      display: inline-flex;
+      min-height: 34px;
+      align-items: center;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .topnav a:hover {
+      border-color: var(--strong-line);
+      background: #ffffff;
+    }
+
+    main {
+      padding: 28px 0 48px;
+    }
+
+    .notice {
+      margin-bottom: 16px;
+      padding: 12px 15px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .safety-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .safety-item {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .safety-item strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .safety-item span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .error {
+      display: none;
+      margin-bottom: 16px;
+      padding: 12px 15px;
+      border: 1px solid #e4c987;
+      border-radius: 6px;
+      background: var(--amber-soft);
+      color: var(--amber);
+      font-size: 13px;
+    }
+
+    .error.visible {
+      display: block;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(290px, 0.82fr) minmax(0, 1.6fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .panel-header span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    form {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    label,
+    .field-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      text-transform: uppercase;
+    }
+
+    textarea,
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--strong-line);
+      border-radius: 5px;
+      background: #ffffff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 132px;
+      resize: vertical;
+    }
+
+    input[type="number"],
+    select {
+      min-height: 39px;
+    }
+
+    .mode-options {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .mode-options label,
+    .toggle-row label {
+      margin: 0;
+      text-transform: none;
+    }
+
+    .choice {
+      display: flex;
+      min-height: 38px;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .choice input {
+      margin: 0;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 40px;
+      padding: 0 2px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button {
+      min-height: 39px;
+      padding: 8px 14px;
+      border: 1px solid #165f91;
+      border-radius: 5px;
+      background: #165f91;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.68;
+    }
+
+    .link-button {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .answer-area {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .answer {
+      min-height: 140px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .sources {
+      display: grid;
+      gap: 10px;
+    }
+
+    .source-item {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .source-item h3 {
+      margin: 0;
+      overflow-wrap: anywhere;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pill {
+      padding: 2px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-soft);
+    }
+
+    .empty {
+      padding: 28px 16px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 840px) {
+      .layout,
+      .filters,
+      .safety-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 16px 0;
+        gap: 10px;
+      }
+
+      .mode {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>Ask Knowledge Base</h1>
+        <p>Ask mode over the local knowledge base</p>
+      </div>
+      <nav class="topnav" aria-label="Primary navigation">
+        <a href="/">Home</a>
+        <a href="/search">Search</a>
+        <a href="/ask">Ask</a>
+        <a href="/diagnostics">Diagnostics</a>
+        <a href="/troubleshooting">Troubleshooting</a>
+        <a href="/docs">API Docs</a>
+        <a href="/api">API Overview</a>
+      </nav>
+      <div class="mode" aria-label="Local Ask mode">
+        <span class="mode-dot" aria-hidden="true"></span>
+        <span>Local only / Ask mode / Read-only by default</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="safety-grid" aria-label="Safety status">
+      <div class="safety-item"><strong>Local only</strong><span>Ask uses local API, Qdrant, and Ollama.</span></div>
+      <div class="safety-item"><strong>Read-only by default</strong><span>save_log is fixed to false in the browser.</span></div>
+      <div class="safety-item"><strong>No public network</strong><span>No external assets are loaded by this page.</span></div>
+      <div class="safety-item"><strong>No index/rebuild/backup execution from Web</strong><span>This page cannot run maintenance actions.</span></div>
+    </section>
+    <div class="notice">
+      This page calls local Ollama to generate answers and depends on local Qdrant for retrieval. Default search_mode is hybrid. save_log is fixed to false, so this page will not save QA logs. It will not write to the knowledge base, update, rebuild, backup, or add notes. Results do not display raw context, prompt, source paths, or full Markdown text.
+    </div>
+    <div class="error" id="safe-error" role="alert">
+      Ask failed. Please check Diagnostics and confirm local Ollama and Qdrant are running. See Troubleshooting for local checks.
+    </div>
+
+    <section class="layout" aria-label="Ask knowledge base">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Question</h2>
+          <span>POST</span>
+        </div>
+        <form id="ask-form">
+          <div>
+            <label for="question">question</label>
+            <textarea id="question" name="question" required maxlength="1000" placeholder="Ask a question"></textarea>
+          </div>
+
+          <div>
+            <span class="field-label">search_mode</span>
+            <div class="mode-options">
+              <label class="choice"><input type="radio" name="search_mode" value="keyword"> keyword</label>
+              <label class="choice"><input type="radio" name="search_mode" value="vector"> vector</label>
+              <label class="choice"><input type="radio" name="search_mode" value="hybrid" checked> hybrid</label>
+            </div>
+          </div>
+
+          <div>
+            <label for="limit">limit</label>
+            <input id="limit" name="limit" type="number" value="5" min="1" max="10">
+          </div>
+
+          <div class="toggle-row">
+            <label for="save-log">save_log is disabled in this phase</label>
+            <input id="save-log" name="save_log" type="checkbox" disabled>
+          </div>
+
+          <div class="filters">
+            <div>
+              <label for="project">project</label>
+              <select id="project" name="project">
+                <option value="">Any project</option>
+              </select>
+            </div>
+            <div>
+              <label for="doc-type">doc_type</label>
+              <select id="doc-type" name="doc_type">
+                <option value="">Any doc type</option>
+              </select>
+            </div>
+            <div>
+              <label for="category">category</label>
+              <select id="category" name="category">
+                <option value="">Any category</option>
+              </select>
+            </div>
+            <div>
+              <label for="tag">tag</label>
+              <select id="tag" name="tag">
+                <option value="">Any tag</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="submit-button" type="submit">Ask</button>
+            <a class="link-button" href="/">Back to home</a>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Answer</h2>
+          <span id="source-count">0 sources</span>
+        </div>
+        <div class="answer-area">
+          <div class="answer" id="answer">Ask a question to generate a local answer.</div>
+          <div class="sources" id="sources"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const endpoints = {
+      ask: "/api/v1/ask",
+      projects: "/api/v1/discovery/projects",
+      docTypes: "/api/v1/discovery/doc-types",
+      categories: "/api/v1/discovery/categories",
+      tags: "/api/v1/discovery/tags"
+    };
+
+    const byId = (id) => document.getElementById(id);
+
+    function showSafeError() {
+      byId("safe-error").classList.add("visible");
+    }
+
+    function hideSafeError() {
+      byId("safe-error").classList.remove("visible");
+    }
+
+    function safeText(value) {
+      const text = value === null || value === undefined ? "" : String(value);
+      return /[A-Za-z]:[\\/]/.test(text) ? "" : text;
+    }
+
+    async function fetchJson(path) {
+      const response = await fetch(path, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("Request unavailable");
+      }
+
+      const data = await response.json();
+      if (data && data.status === "error") {
+        throw new Error("Request unavailable");
+      }
+
+      return data;
+    }
+
+    async function postJson(path, payload) {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload),
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("Request unavailable");
+      }
+
+      const data = await response.json();
+      if (data && data.status === "error") {
+        throw new Error("Request unavailable");
+      }
+
+      return data;
+    }
+
+    function projectName(project) {
+      return safeText(project && project.name ? project.name : "").trim();
+    }
+
+    function visibleProjects(projects) {
+      if (!Array.isArray(projects)) {
+        return [];
+      }
+
+      return projects
+        .filter((project) => {
+          const name = projectName(project);
+          const normalized = name.toLowerCase();
+          return name !== "" && normalized !== "unknown" && normalized !== "qa_logs";
+        })
+        .sort((left, right) => {
+          const leftName = projectName(left);
+          const rightName = projectName(right);
+          const preferred = "Personal_Project_Assistant";
+
+          if (leftName === preferred && rightName !== preferred) {
+            return -1;
+          }
+
+          if (rightName === preferred && leftName !== preferred) {
+            return 1;
+          }
+
+          return leftName.localeCompare(rightName, "en", { sensitivity: "base" });
+        });
+    }
+
+    function fillSelect(selectId, items) {
+      const select = byId(selectId);
+      const first = select.firstElementChild;
+      select.replaceChildren(first);
+
+      if (!Array.isArray(items)) {
+        return;
+      }
+
+      items.forEach((item) => {
+        const name = safeText(item && item.name ? item.name : "").trim();
+        if (!name) {
+          return;
+        }
+
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = item.file_count === undefined
+          ? name
+          : `${name} (${safeText(item.file_count)})`;
+        select.appendChild(option);
+      });
+    }
+
+    async function loadFilters() {
+      const results = await Promise.allSettled([
+        fetchJson(endpoints.projects),
+        fetchJson(endpoints.docTypes),
+        fetchJson(endpoints.categories),
+        fetchJson(endpoints.tags)
+      ]);
+
+      if (results[0].status === "fulfilled") {
+        fillSelect("project", visibleProjects(results[0].value));
+      }
+
+      if (results[1].status === "fulfilled") {
+        fillSelect("doc-type", results[1].value);
+      }
+
+      if (results[2].status === "fulfilled") {
+        fillSelect("category", results[2].value);
+      }
+
+      if (results[3].status === "fulfilled") {
+        fillSelect("tag", results[3].value);
+      }
+
+      if (results.some((item) => item.status === "rejected")) {
+        showSafeError();
+      }
+    }
+
+    function selectedMode() {
+      const selected = document.querySelector("input[name='search_mode']:checked");
+      return selected ? selected.value : "hybrid";
+    }
+
+    function buildAskPayload() {
+      const payload = {
+        question: byId("question").value.trim(),
+        search_mode: selectedMode(),
+        limit: Math.min(10, Math.max(1, Number(byId("limit").value) || 5)),
+        save_log: false
+      };
+
+      [
+        ["project", "project"],
+        ["doc-type", "doc_type"],
+        ["category", "category"],
+        ["tag", "tag"]
+      ].forEach(([id, key]) => {
+        const value = byId(id).value.trim();
+        if (value) {
+          payload[key] = value;
+        }
+      });
+
+      return payload;
+    }
+
+    function addMeta(container, label, value) {
+      const text = safeText(value).trim();
+      if (!text) {
+        return;
+      }
+
+      const item = document.createElement("span");
+      item.className = "pill";
+      item.textContent = `${label}: ${text}`;
+      container.appendChild(item);
+    }
+
+    function renderSources(items) {
+      const container = byId("sources");
+      container.replaceChildren();
+      const sources = Array.isArray(items) ? items : [];
+      byId("source-count").textContent = `${sources.length} sources`;
+
+      if (sources.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No sources returned.";
+        container.appendChild(empty);
+        return;
+      }
+
+      sources.forEach((item) => {
+        const source = document.createElement("article");
+        source.className = "source-item";
+
+        const title = document.createElement("h3");
+        title.textContent = safeText(item.title) || safeText(item.file_name) || "Untitled";
+        source.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        addMeta(meta, "file_name", item.file_name);
+        addMeta(meta, "project", item.project);
+        addMeta(meta, "doc_type", item.doc_type);
+        addMeta(meta, "category", item.category);
+        addMeta(meta, "score", Number(item.score || 0).toFixed(4));
+
+        const tags = Array.isArray(item.tags)
+          ? item.tags.map((tag) => safeText(tag).trim()).filter(Boolean).join(", ")
+          : "";
+        addMeta(meta, "tags", tags);
+        source.appendChild(meta);
+
+        container.appendChild(source);
+      });
+    }
+
+    function renderAnswer(data) {
+      byId("answer").textContent = safeText(data && data.answer ? data.answer : "");
+      renderSources(data && data.sources);
+    }
+
+    async function runAsk(event) {
+      event.preventDefault();
+      hideSafeError();
+
+      if (!byId("question").value.trim()) {
+        showSafeError();
+        return;
+      }
+
+      const button = byId("submit-button");
+      button.disabled = true;
+      byId("answer").textContent = "Generating local answer...";
+      byId("sources").replaceChildren();
+      byId("source-count").textContent = "0 sources";
+
+      try {
+        const data = await postJson(endpoints.ask, buildAskPayload());
+        renderAnswer(data);
+      } catch (error) {
+        byId("answer").textContent = "Ask failed. Please check Diagnostics and Troubleshooting.";
+        byId("sources").replaceChildren();
+        byId("source-count").textContent = "0 sources";
+        showSafeError();
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    byId("ask-form").addEventListener("submit", runAsk);
+    loadFilters();
+  </script>
+</body>
+</html>

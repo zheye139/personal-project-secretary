@@ -19,6 +19,11 @@ OLLAMA_URL = config.OLLAMA_URL
 EMBED_MODEL = config.EMBED_MODEL
 QDRANT_URL = config.QDRANT_URL
 COLLECTION_NAME = config.COLLECTION_NAME
+API_SEARCH_MODES = {"keyword", "vector", "hybrid"}
+API_SEARCH_MIN_LIMIT = 1
+API_SEARCH_MAX_LIMIT = 20
+API_SNIPPET_CHARS = 300
+WINDOWS_ABSOLUTE_PATH_PATTERN = re.compile(r"[A-Za-z]:[\\/]")
 
 
 # ============================================================
@@ -605,6 +610,187 @@ def normalize_result_scores(results: list[dict]) -> dict[str, float]:
         normalized[key] = normalize_score(score, min_score, max_score)
 
     return normalized
+
+
+def normalize_search_limit(limit: int) -> int:
+    """
+    Clamp API search limits to a small local-read range.
+    """
+    try:
+        value = int(limit)
+    except Exception:
+        value = 5
+
+    return max(API_SEARCH_MIN_LIMIT, min(API_SEARCH_MAX_LIMIT, value))
+
+
+def safe_api_text(value) -> str:
+    """
+    Return a string safe for API metadata fields.
+    """
+    text = "" if value is None else str(value)
+
+    if WINDOWS_ABSOLUTE_PATH_PATTERN.search(text):
+        return ""
+
+    return text
+
+
+def safe_api_tags(value) -> list[str]:
+    """
+    Normalize tags while removing path-like values.
+    """
+    if not value:
+        return []
+
+    if isinstance(value, list):
+        raw_tags = value
+    else:
+        raw_tags = [value]
+
+    return [
+        text
+        for text in (safe_api_text(item).strip() for item in raw_tags)
+        if text
+    ]
+
+
+def build_api_snippet(text, snippet_chars: int) -> str:
+    """
+    Build a short, path-safe text preview for optional API display.
+    """
+    try:
+        snippet_limit = max(0, int(snippet_chars or 0))
+    except Exception:
+        snippet_limit = API_SNIPPET_CHARS
+
+    if snippet_limit <= 0:
+        return ""
+
+    raw_text = safe_api_text(text).strip()
+    if not raw_text:
+        return ""
+
+    raw_text = re.sub(r"\s+", " ", raw_text)
+    if len(raw_text) <= snippet_limit:
+        return raw_text
+
+    return raw_text[:snippet_limit].rstrip() + "..."
+
+
+def format_search_result_for_api(
+    item: dict,
+    show_text: bool = False,
+    snippet_chars: int = API_SNIPPET_CHARS,
+) -> dict:
+    """
+    Convert a raw search result into a public API-safe result.
+    """
+    payload = item.get("payload", {})
+    result = {
+        "score": float(item.get("score", 0.0)),
+        "mode": safe_api_text(item.get("mode", "")),
+        "title": safe_api_text(payload.get("title", "")),
+        "file_name": safe_api_text(payload.get("file_name", "")),
+        "project": safe_api_text(payload.get("project", "")),
+        "doc_type": safe_api_text(payload.get("doc_type", "")),
+        "category": safe_api_text(payload.get("category", "")),
+        "tags": safe_api_tags(payload.get("tags", [])),
+        "chunk_index": payload.get("chunk_index", ""),
+        "updated_at": safe_api_text(payload.get("updated_at", "")),
+    }
+
+    if show_text:
+        result["snippet"] = build_api_snippet(
+            payload.get("text", ""),
+            snippet_chars=snippet_chars,
+        )
+
+    return result
+
+
+def search_documents(
+    query: str,
+    mode: str = "keyword",
+    project: str | None = None,
+    doc_type: str | None = None,
+    category: str | None = None,
+    tag: str | None = None,
+    limit: int = 5,
+    show_text: bool = False,
+    snippet_chars: int = API_SNIPPET_CHARS,
+) -> dict:
+    """
+    Run a search and return an API-safe result structure.
+    """
+    normalized_query = str(query or "").strip()
+    normalized_mode = str(mode or "").strip().lower()
+    normalized_limit = normalize_search_limit(limit)
+
+    if not normalized_query:
+        raise ValueError("Search query is required.")
+
+    if normalized_mode not in API_SEARCH_MODES:
+        raise ValueError("Unsupported search mode.")
+
+    query_filter = build_filter(
+        project=project,
+        doc_type=doc_type,
+        category=category,
+        tag=tag,
+    )
+
+    client = get_qdrant_client()
+
+    try:
+        if normalized_mode == "keyword":
+            raw_results = keyword_search(
+                client=client,
+                query=normalized_query,
+                query_filter=query_filter,
+                limit=normalized_limit,
+            )
+        elif normalized_mode == "vector":
+            raw_results = vector_search(
+                client=client,
+                query=normalized_query,
+                query_filter=query_filter,
+                limit=normalized_limit,
+            )
+        else:
+            raw_results = hybrid_search(
+                client=client,
+                query=normalized_query,
+                query_filter=query_filter,
+                limit=normalized_limit,
+            )
+    except ValueError:
+        raise
+    except Exception as exc:
+        raise RuntimeError("Search service is unavailable.") from exc
+    finally:
+        try:
+            client.close()
+        except Exception:
+            pass
+
+    results = [
+        format_search_result_for_api(
+            item,
+            show_text=show_text,
+            snippet_chars=snippet_chars,
+        )
+        for item in raw_results
+    ]
+
+    return {
+        "status": "ok",
+        "query": normalized_query,
+        "mode": normalized_mode,
+        "limit": normalized_limit,
+        "count": len(results),
+        "results": results,
+    }
 
 
 def print_result(

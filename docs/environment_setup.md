@@ -72,7 +72,7 @@ EMBED_MODEL = "bge-m3:latest"
 Create container / 创建容器：
 
 ```powershell
-docker run -d --name pkb-qdrant -p 6333:6333 -v D:/Personal_Knowledge_Base/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
+docker run -d --name pkb-qdrant -p 6333:6333 -v <your-knowledge-root>/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
 ```
 
 Start existing container / 启动已有容器：
@@ -116,7 +116,7 @@ Copy-Item .\config.example.py .\config.py
 Edit `config.py` / 编辑 `config.py`：
 
 ```python
-KNOWLEDGE_ROOT = Path(r"D:\Personal_Knowledge_Base")
+KNOWLEDGE_ROOT = Path(r"<your-knowledge-root>")
 OLLAMA_URL = "http://127.0.0.1:11434"
 CHAT_MODEL = "qwen3:8b"
 EMBED_MODEL = "bge-m3:latest"
@@ -352,3 +352,52 @@ If you are at repository root, run:
 ```powershell
 python rag_mvp\add_note.py --help
 ```
+
+---
+
+## 12. M4 Local API and Web Environment / M4 本地 API 和 Web 环境
+
+M4 adds a local FastAPI API and browser Web interface.
+
+M4 新增了一个本地 FastAPI API 和浏览器 Web 界面。
+
+Additional Python dependencies / 额外的 Python 依赖:
+
+- FastAPI
+- Uvicorn
+- HTTPX
+
+Install dependencies from the project requirements file / 从项目的 requirements 文件安装依赖:
+
+```powershell
+cd rag_mvp
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Start the local API/Web service / 启动本地 API/Web 服务:
+
+```powershell
+cd rag_mvp
+.\run_api.ps1
+```
+
+Equivalent command / 等效命令:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn api_app:app --host 127.0.0.1 --port 8000 --no-use-colors
+```
+
+Open the browser at / 在浏览器中打开:
+
+```text
+http://127.0.0.1:8000/
+http://127.0.0.1:8000/docs
+```
+
+Security notes / 安全说明:
+
+- The local API binds to `127.0.0.1` by default.
+- The Web/API service is not intended for public-network exposure.
+- The Web pages do not load external CDN assets.
+- Search and Ask still depend on the local Qdrant index and local Ollama services.

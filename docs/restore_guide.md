@@ -51,7 +51,7 @@ Restore your private knowledge base to a local directory, for example:
 将私人知识库恢复到本地目录，例如：
 
 ```text
-D:\Personal_Knowledge_Base
+<your-knowledge-root>
 ```
 
 Recommended structure / 推荐结构：
@@ -87,7 +87,7 @@ Create or start Qdrant container:
 创建或启动 Qdrant 容器：
 
 ```powershell
-docker run -d --name pkb-qdrant -p 6333:6333 -v D:/Personal_Knowledge_Base/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
+docker run -d --name pkb-qdrant -p 6333:6333 -v <your-knowledge-root>/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
 ```
 
 If it already exists / 如果已存在：
@@ -124,7 +124,7 @@ Copy-Item .\config.example.py .\config.py
 Edit `config.py` / 编辑 `config.py`：
 
 ```python
-KNOWLEDGE_ROOT = Path(r"D:\Personal_Knowledge_Base")
+KNOWLEDGE_ROOT = Path(r"<your-knowledge-root>")
 COLLECTION_NAME = "personal_knowledge_base"
 ```
 
@@ -249,6 +249,29 @@ python backup_kb.py
 - Keep Markdown files as the primary source.
 - Keep private knowledge base outside the GitHub repository.
 - Do not commit `config.py`, Qdrant data, backups, or private reports.
+
+---
+
+## 14. M4 API/Web Restore Notes
+
+After restoring code from GitHub:
+
+- Copy `config.example.py` to local `config.py`.
+- Reinstall Python dependencies from `requirements.txt`.
+- Reconnect local Qdrant and local Ollama.
+- Rebuild or refresh the Qdrant index from the private Markdown knowledge base.
+- Start the local Web/API service with `.\run_api.ps1` from the `rag_mvp` directory.
+
+GitHub restores code capability only. It does not restore:
+
+- real private knowledge-base Markdown content
+- Qdrant storage data
+- backup data
+- local `.env` files
+- local `config.py`
+- local runtime manifests
+
+The Web/API layer restores the local interface, Search API, Ask API, Diagnostics page, and Troubleshooting page. It does not restore personal knowledge-base content by itself.
 
 - 不建议恢复旧 `.venv`，应重新创建。
 - 不要把 Qdrant 当作唯一数据源。

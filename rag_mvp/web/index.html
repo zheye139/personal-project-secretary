@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+  <title>Personal Project Secretary</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      font-synthesis: none;
+      --page: #f4f5f2;
+      --surface: #ffffff;
+      --surface-soft: #f8f9f7;
+      --ink: #20231f;
+      --muted: #686e67;
+      --line: #d9ddd6;
+      --strong-line: #b7bdb5;
+      --green: #1e7048;
+      --green-soft: #e8f3ec;
+      --amber: #8a5b12;
+      --amber-soft: #fff4d8;
+      --focus: #1769aa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--page);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: #165f91;
+      text-underline-offset: 3px;
+    }
+
+    a:hover {
+      color: #0d456b;
+    }
+
+    a:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent);
+      outline-offset: 3px;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--strong-line);
+      background: var(--surface);
+    }
+
+    .topbar-inner,
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar-inner {
+      display: flex;
+      min-height: 76px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mode {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      white-space: nowrap;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .mode-dot,
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .topnav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topnav a {
+      display: inline-flex;
+      min-height: 34px;
+      align-items: center;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .topnav a:hover {
+      border-color: var(--strong-line);
+      background: #ffffff;
+    }
+
+    main {
+      padding: 28px 0 48px;
+    }
+
+    .service-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 13px 16px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .service-status {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 10px;
+      font-weight: 650;
+    }
+
+    .service-status span:last-child {
+      overflow-wrap: anywhere;
+    }
+
+    .service-address {
+      color: var(--muted);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .safety-grid,
+    .entry-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .safety-item,
+    .entry-card {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .safety-item strong,
+    .entry-card strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .safety-item span,
+    .entry-card span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .entry-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .entry-card {
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .entry-card:hover {
+      border-color: var(--strong-line);
+      background: var(--surface-soft);
+    }
+
+    .section {
+      margin-top: 28px;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    .section-heading p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      min-width: 0;
+      min-height: 102px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      display: block;
+      margin-top: 13px;
+      overflow-wrap: anywhere;
+      font-size: 25px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 720;
+      line-height: 1;
+    }
+
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.7fr) minmax(260px, 0.7fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    .panel-header span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    th:first-child,
+    td:first-child {
+      width: auto;
+    }
+
+    th:not(:first-child),
+    td:not(:first-child) {
+      width: 92px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td:first-child {
+      overflow-wrap: anywhere;
+      font-weight: 600;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .empty-state {
+      padding: 28px 16px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .links {
+      margin: 0;
+      padding: 4px 0;
+      list-style: none;
+    }
+
+    .links li {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .links li:last-child {
+      border-bottom: 0;
+    }
+
+    .links a {
+      display: flex;
+      min-height: 49px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .links a:hover {
+      background: var(--surface-soft);
+    }
+
+    .links code {
+      color: var(--muted);
+      font-size: 11px;
+      overflow-wrap: anywhere;
+      text-align: right;
+    }
+
+    .arrow {
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .notice {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 15px;
+      border: 1px solid #e4c987;
+      border-radius: 6px;
+      background: var(--amber-soft);
+      color: var(--amber);
+      font-size: 13px;
+    }
+
+    .notice.visible {
+      display: block;
+    }
+
+    .footer {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .safety-grid,
+      .entry-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .topbar-inner,
+      main {
+        width: min(100% - 24px, 1120px);
+      }
+
+      .topbar-inner,
+      .service-strip,
+      .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .topbar-inner {
+        padding: 16px 0;
+        gap: 10px;
+      }
+
+      main {
+        padding-top: 18px;
+      }
+
+      .service-strip {
+        gap: 8px;
+      }
+
+      .service-address {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .safety-grid,
+      .entry-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metric {
+        min-height: 92px;
+      }
+
+      th,
+      td {
+        padding: 10px 12px;
+      }
+
+      th:not(:first-child),
+      td:not(:first-child) {
+        width: 70px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>Personal Project Secretary</h1>
+        <p>Local personal knowledge-base assistant entry point</p>
+      </div>
+      <nav class="topnav" aria-label="Primary navigation">
+        <a href="/">Home</a>
+        <a href="/search">Search</a>
+        <a href="/ask">Ask</a>
+        <a href="/diagnostics">Diagnostics</a>
+        <a href="/troubleshooting">Troubleshooting</a>
+        <a href="/docs">API Docs</a>
+        <a href="/api">API Overview</a>
+      </nav>
+      <div class="mode" aria-label="Local API read-only mode">
+        <span class="mode-dot" aria-hidden="true"></span>
+        <span>Local only / Read-only by default</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="service-strip" aria-label="API connection">
+      <div class="service-status">
+        <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+        <span id="service-status" role="status">Checking local API...</span>
+      </div>
+      <div class="service-address">http://127.0.0.1:8000</div>
+    </section>
+
+    <section class="safety-grid" aria-label="Safety status">
+      <div class="safety-item"><strong>Local only</strong><span>Default access is 127.0.0.1.</span></div>
+      <div class="safety-item"><strong>Read-only by default</strong><span>Web pages do not modify the knowledge base.</span></div>
+      <div class="safety-item"><strong>No public network</strong><span>No external assets are loaded by this page.</span></div>
+      <div class="safety-item"><strong>No index/rebuild/backup execution from Web</strong><span>Maintenance actions remain outside the browser UI.</span></div>
+    </section>
+
+    <div class="notice" id="safe-error" role="alert">
+      API status is unavailable. Please open Diagnostics or inspect the local terminal logs. See Troubleshooting for local checks.
+    </div>
+
+    <section class="section" aria-labelledby="entry-title">
+      <div class="section-heading">
+        <h2 id="entry-title">Start here</h2>
+        <p>Use local Search, local Ask, or inspect the API contract.</p>
+      </div>
+      <div class="entry-grid">
+        <a class="entry-card" href="/search"><strong>Search Documents</strong><span>Find indexed local documents without generating an answer.</span></a>
+        <a class="entry-card" href="/ask"><strong>Ask Knowledge Base</strong><span>Generate a local answer using retrieval and Ollama.</span></a>
+        <a class="entry-card" href="/diagnostics"><strong>System Diagnostics</strong><span>Check local API, discovery, Qdrant, and Ollama status.</span></a>
+        <a class="entry-card" href="/troubleshooting"><strong>Troubleshooting Guide</strong><span>Review local service checks and safe recovery steps.</span></a>
+        <a class="entry-card" href="/docs"><strong>API Documentation</strong><span>Open the local FastAPI documentation.</span></a>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="overview-title">
+      <div class="section-heading">
+        <h2 id="overview-title">Overview</h2>
+        <p>This page will not execute ask, search, index, rebuild, or backup actions.</p>
+      </div>
+      <div class="metrics">
+        <div class="metric">
+          <span class="metric-label">API status</span>
+          <strong class="metric-value" id="metric-status">Loading</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Files</span>
+          <strong class="metric-value" id="metric-files">-</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Projects</span>
+          <strong class="metric-value" id="metric-projects">-</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Doc types</span>
+          <strong class="metric-value" id="metric-doc-types">-</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Tags</span>
+          <strong class="metric-value" id="metric-tags">-</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Commands</span>
+          <strong class="metric-value" id="metric-commands">-</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="section workspace-grid" aria-label="Projects and API links">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Projects</h2>
+          <span>First 10</span>
+        </div>
+        <div id="project-content">
+          <div class="empty-state">Loading projects...</div>
+        </div>
+      </div>
+
+      <nav class="panel" aria-labelledby="links-title">
+        <div class="panel-header">
+          <h2 id="links-title">API links</h2>
+          <span>GET</span>
+        </div>
+        <ul class="links">
+          <li><a href="/ask"><span>Ask page</span><code>/ask</code></a></li>
+          <li><a href="/search"><span>Search page</span><code>/search</code></a></li>
+          <li><a href="/diagnostics"><span>Diagnostics page</span><code>/diagnostics</code></a></li>
+          <li><a href="/troubleshooting"><span>Troubleshooting guide</span><code>/troubleshooting</code></a></li>
+          <li><a href="/api"><span>API overview</span><code>/api</code></a></li>
+          <li><a href="/docs"><span>OpenAPI docs</span><span class="arrow" aria-hidden="true">&rarr;</span></a></li>
+          <li><a href="/api/v1/health"><span>Health</span><code>/api/v1/health</code></a></li>
+          <li><a href="/api/v1/commands"><span>Commands</span><code>/api/v1/commands</code></a></li>
+          <li><a href="/api/v1/discovery/summary"><span>Summary</span><code>/api/v1/discovery/summary</code></a></li>
+          <li><a href="/api/v1/discovery/projects"><span>Projects</span><code>/api/v1/discovery/projects</code></a></li>
+        </ul>
+      </nav>
+    </section>
+
+    <footer class="footer">
+      Local only. Read-only by default. No public network. No index/rebuild/backup execution from Web.
+    </footer>
+  </main>
+
+  <script>
+    const endpoints = {
+      health: "/api/v1/health",
+      summary: "/api/v1/discovery/summary",
+      projects: "/api/v1/discovery/projects",
+      commands: "/api/v1/commands"
+    };
+
+    const byId = (id) => document.getElementById(id);
+
+    async function fetchJson(path) {
+      const response = await fetch(path, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("Request unavailable");
+      }
+
+      const data = await response.json();
+      if (data && data.status === "error") {
+        throw new Error("API unavailable");
+      }
+      return data;
+    }
+
+    function safeNumber(value) {
+      return Number.isFinite(Number(value)) ? String(Number(value)) : "0";
+    }
+
+    function showSafeError() {
+      byId("safe-error").classList.add("visible");
+    }
+
+    function projectName(project) {
+      return String(project && project.name ? project.name : "").trim();
+    }
+
+    function visibleProjects(projects) {
+      if (!Array.isArray(projects)) {
+        return [];
+      }
+
+      return projects
+        .filter((project) => {
+          const name = projectName(project);
+          const normalized = name.toLowerCase();
+          return name !== "" && normalized !== "qa_logs" && normalized !== "unknown";
+        })
+        .sort((left, right) => {
+          const leftName = projectName(left);
+          const rightName = projectName(right);
+          const preferred = "Personal_Project_Assistant";
+
+          if (leftName === preferred && rightName !== preferred) {
+            return -1;
+          }
+
+          if (rightName === preferred && leftName !== preferred) {
+            return 1;
+          }
+
+          return leftName.localeCompare(rightName, "en", { sensitivity: "base" });
+        });
+    }
+
+    function renderProjects(projects) {
+      const container = byId("project-content");
+      container.replaceChildren();
+      const displayProjects = visibleProjects(projects);
+
+      if (displayProjects.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "No projects found.";
+        container.appendChild(empty);
+        return;
+      }
+
+      const table = document.createElement("table");
+      const head = document.createElement("thead");
+      const headRow = document.createElement("tr");
+
+      ["Project", "Files", "Chunks"].forEach((label) => {
+        const cell = document.createElement("th");
+        cell.scope = "col";
+        cell.textContent = label;
+        headRow.appendChild(cell);
+      });
+
+      head.appendChild(headRow);
+      table.appendChild(head);
+
+      const body = document.createElement("tbody");
+      displayProjects.slice(0, 10).forEach((project) => {
+        const row = document.createElement("tr");
+        const name = document.createElement("td");
+        const files = document.createElement("td");
+        const chunks = document.createElement("td");
+
+        name.textContent = projectName(project);
+        files.textContent = safeNumber(project.file_count);
+        chunks.textContent = safeNumber(project.chunk_count);
+
+        row.append(name, files, chunks);
+        body.appendChild(row);
+      });
+
+      table.appendChild(body);
+      container.appendChild(table);
+    }
+
+    async function loadDashboard() {
+      const results = await Promise.allSettled([
+        fetchJson(endpoints.health),
+        fetchJson(endpoints.summary),
+        fetchJson(endpoints.projects),
+        fetchJson(endpoints.commands)
+      ]);
+
+      const [healthResult, summaryResult, projectsResult, commandsResult] = results;
+
+      if (healthResult.status === "fulfilled") {
+        byId("service-status").textContent = "Local API is available";
+        byId("metric-status").textContent = healthResult.value.status === "ok" ? "Online" : "Unknown";
+      } else {
+        byId("service-status").textContent = "Local API status unavailable";
+        byId("metric-status").textContent = "Unavailable";
+        byId("status-dot").style.background = "var(--amber)";
+        showSafeError();
+      }
+
+      if (summaryResult.status === "fulfilled") {
+        const summary = summaryResult.value || {};
+        byId("metric-files").textContent = safeNumber(summary.total_files);
+        byId("metric-projects").textContent = safeNumber(summary.project_count);
+        byId("metric-doc-types").textContent = safeNumber(summary.doc_type_count);
+        byId("metric-tags").textContent = safeNumber(summary.tag_count);
+      } else {
+        showSafeError();
+      }
+
+      if (projectsResult.status === "fulfilled") {
+        renderProjects(projectsResult.value);
+      } else {
+        renderProjects([]);
+        showSafeError();
+      }
+
+      if (commandsResult.status === "fulfilled") {
+        const commands = commandsResult.value && commandsResult.value.commands;
+        byId("metric-commands").textContent = Array.isArray(commands) ? String(commands.length) : "0";
+      } else {
+        showSafeError();
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

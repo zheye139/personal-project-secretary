@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+  <title>Search Documents</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      font-synthesis: none;
+      --page: #f4f5f2;
+      --surface: #ffffff;
+      --surface-soft: #f8f9f7;
+      --ink: #20231f;
+      --muted: #686e67;
+      --line: #d9ddd6;
+      --strong-line: #b7bdb5;
+      --green: #1e7048;
+      --amber: #8a5b12;
+      --amber-soft: #fff4d8;
+      --focus: #1769aa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--page);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: #165f91;
+      text-underline-offset: 3px;
+    }
+
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--strong-line);
+      background: var(--surface);
+    }
+
+    .topbar-inner,
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar-inner {
+      display: flex;
+      min-height: 76px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 720;
+      line-height: 1.2;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mode {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      white-space: nowrap;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .mode-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .topnav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topnav a {
+      display: inline-flex;
+      min-height: 34px;
+      align-items: center;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .topnav a:hover {
+      border-color: var(--strong-line);
+      background: #ffffff;
+    }
+
+    main {
+      padding: 28px 0 48px;
+    }
+
+    .notice {
+      margin-bottom: 16px;
+      padding: 12px 15px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .safety-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .safety-item {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .safety-item strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .safety-item span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .error {
+      display: none;
+      margin-bottom: 16px;
+      padding: 12px 15px;
+      border: 1px solid #e4c987;
+      border-radius: 6px;
+      background: var(--amber-soft);
+      color: var(--amber);
+      font-size: 13px;
+    }
+
+    .error.visible {
+      display: block;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.75fr) minmax(0, 1.65fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .panel-header span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    form {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    label,
+    .field-label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      text-transform: uppercase;
+    }
+
+    input[type="search"],
+    input[type="number"],
+    select {
+      width: 100%;
+      min-height: 39px;
+      padding: 8px 10px;
+      border: 1px solid var(--strong-line);
+      border-radius: 5px;
+      background: #ffffff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .mode-options {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .mode-options label,
+    .toggle-row label {
+      margin: 0;
+      text-transform: none;
+    }
+
+    .choice {
+      display: flex;
+      min-height: 38px;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .choice input {
+      margin: 0;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 40px;
+      padding: 0 2px;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button {
+      min-height: 39px;
+      padding: 8px 14px;
+      border: 1px solid #165f91;
+      border-radius: 5px;
+      background: #165f91;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.68;
+    }
+
+    .link-button {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .results {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .result {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .result h3 {
+      margin: 0;
+      overflow-wrap: anywhere;
+      font-size: 16px;
+      line-height: 1.3;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pill {
+      padding: 2px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-soft);
+    }
+
+    .snippet {
+      margin: 12px 0 0;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .empty {
+      padding: 28px 16px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 820px) {
+      .layout,
+      .filters,
+      .safety-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 16px 0;
+        gap: 10px;
+      }
+
+      .mode {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>Search Documents</h1>
+        <p>Search indexed local metadata and snippets</p>
+      </div>
+      <nav class="topnav" aria-label="Primary navigation">
+        <a href="/">Home</a>
+        <a href="/search">Search</a>
+        <a href="/ask">Ask</a>
+        <a href="/diagnostics">Diagnostics</a>
+        <a href="/troubleshooting">Troubleshooting</a>
+        <a href="/docs">API Docs</a>
+        <a href="/api">API Overview</a>
+      </nav>
+      <div class="mode" aria-label="Local API read-only mode">
+        <span class="mode-dot" aria-hidden="true"></span>
+        <span>Local only / Read-only by default</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="safety-grid" aria-label="Safety status">
+      <div class="safety-item"><strong>Local only</strong><span>Search uses the local API.</span></div>
+      <div class="safety-item"><strong>Read-only by default</strong><span>Search does not write knowledge-base files.</span></div>
+      <div class="safety-item"><strong>No public network</strong><span>No external assets are loaded by this page.</span></div>
+      <div class="safety-item"><strong>No index/rebuild/backup execution from Web</strong><span>This page cannot run maintenance actions.</span></div>
+    </section>
+    <div class="notice">
+      This page only runs Search. It does not run Ask, generate model answers, write to the knowledge base, index, rebuild, or backup. Default mode is keyword. show_text is off by default. Results do not display source, point_id, raw payload, or full Markdown text.
+    </div>
+    <div class="error" id="safe-error" role="alert">
+      Search failed. Please check Diagnostics and confirm local Qdrant/Ollama services are running. See Troubleshooting for local checks.
+    </div>
+
+    <section class="layout" aria-label="Search documents">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Query</h2>
+          <span>GET</span>
+        </div>
+        <form id="search-form">
+          <div>
+            <label for="query">q</label>
+            <input id="query" name="q" type="search" required autocomplete="off" placeholder="Search documents">
+          </div>
+
+          <div>
+            <span class="field-label">Mode</span>
+            <div class="mode-options">
+              <label class="choice"><input type="radio" name="mode" value="keyword" checked> keyword</label>
+              <label class="choice"><input type="radio" name="mode" value="vector"> vector</label>
+              <label class="choice"><input type="radio" name="mode" value="hybrid"> hybrid</label>
+            </div>
+          </div>
+
+          <div>
+            <label for="limit">limit</label>
+            <input id="limit" name="limit" type="number" value="5" min="1" max="20">
+          </div>
+
+          <div class="toggle-row">
+            <label for="show-text">Show short snippet</label>
+            <input id="show-text" name="show_text" type="checkbox">
+          </div>
+
+          <div class="filters">
+            <div>
+              <label for="project">project</label>
+              <select id="project" name="project">
+                <option value="">Any project</option>
+              </select>
+            </div>
+            <div>
+              <label for="doc-type">doc_type</label>
+              <select id="doc-type" name="doc_type">
+                <option value="">Any doc type</option>
+              </select>
+            </div>
+            <div>
+              <label for="category">category</label>
+              <select id="category" name="category">
+                <option value="">Any category</option>
+              </select>
+            </div>
+            <div>
+              <label for="tag">tag</label>
+              <select id="tag" name="tag">
+                <option value="">Any tag</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="submit-button" type="submit">Search</button>
+            <a class="link-button" href="/">Back to home</a>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Results</h2>
+          <span><span id="result-count">0</span> results</span>
+        </div>
+        <div class="results" id="results">
+          <div class="empty">Enter a query to search local documents.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const endpoints = {
+      search: "/api/v1/search",
+      projects: "/api/v1/discovery/projects",
+      docTypes: "/api/v1/discovery/doc-types",
+      categories: "/api/v1/discovery/categories",
+      tags: "/api/v1/discovery/tags"
+    };
+
+    const byId = (id) => document.getElementById(id);
+
+    function showSafeError() {
+      byId("safe-error").classList.add("visible");
+    }
+
+    function hideSafeError() {
+      byId("safe-error").classList.remove("visible");
+    }
+
+    function safeText(value) {
+      const text = value === null || value === undefined ? "" : String(value);
+      return /[A-Za-z]:[\\/]/.test(text) ? "" : text;
+    }
+
+    async function fetchJson(path) {
+      const response = await fetch(path, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("Request unavailable");
+      }
+
+      const data = await response.json();
+      if (data && data.status === "error") {
+        throw new Error("Request unavailable");
+      }
+
+      return data;
+    }
+
+    function projectName(project) {
+      return safeText(project && project.name ? project.name : "").trim();
+    }
+
+    function visibleProjects(projects) {
+      if (!Array.isArray(projects)) {
+        return [];
+      }
+
+      return projects
+        .filter((project) => {
+          const name = projectName(project);
+          const normalized = name.toLowerCase();
+          return name !== "" && normalized !== "unknown" && normalized !== "qa_logs";
+        })
+        .sort((left, right) => {
+          const leftName = projectName(left);
+          const rightName = projectName(right);
+          const preferred = "Personal_Project_Assistant";
+
+          if (leftName === preferred && rightName !== preferred) {
+            return -1;
+          }
+
+          if (rightName === preferred && leftName !== preferred) {
+            return 1;
+          }
+
+          return leftName.localeCompare(rightName, "en", { sensitivity: "base" });
+        });
+    }
+
+    function fillSelect(selectId, items, label) {
+      const select = byId(selectId);
+      const first = select.firstElementChild;
+      select.replaceChildren(first);
+
+      if (!Array.isArray(items)) {
+        return;
+      }
+
+      items.forEach((item) => {
+        const name = safeText(item && item.name ? item.name : "").trim();
+        if (!name) {
+          return;
+        }
+
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = label ? `${name} (${safeText(item.file_count)})` : name;
+        select.appendChild(option);
+      });
+    }
+
+    async function loadFilters() {
+      const results = await Promise.allSettled([
+        fetchJson(endpoints.projects),
+        fetchJson(endpoints.docTypes),
+        fetchJson(endpoints.categories),
+        fetchJson(endpoints.tags)
+      ]);
+
+      if (results[0].status === "fulfilled") {
+        fillSelect("project", visibleProjects(results[0].value), true);
+      }
+
+      if (results[1].status === "fulfilled") {
+        fillSelect("doc-type", results[1].value, true);
+      }
+
+      if (results[2].status === "fulfilled") {
+        fillSelect("category", results[2].value, true);
+      }
+
+      if (results[3].status === "fulfilled") {
+        fillSelect("tag", results[3].value, true);
+      }
+
+      if (results.some((item) => item.status === "rejected")) {
+        showSafeError();
+      }
+    }
+
+    function selectedMode() {
+      const selected = document.querySelector("input[name='mode']:checked");
+      return selected ? selected.value : "keyword";
+    }
+
+    function buildSearchPath() {
+      const params = new URLSearchParams();
+      params.set("q", byId("query").value.trim());
+      params.set("mode", selectedMode());
+      params.set("limit", String(Math.min(20, Math.max(1, Number(byId("limit").value) || 5))));
+      params.set("show_text", byId("show-text").checked ? "true" : "false");
+
+      [
+        ["project", "project"],
+        ["doc-type", "doc_type"],
+        ["category", "category"],
+        ["tag", "tag"]
+      ].forEach(([id, key]) => {
+        const value = byId(id).value.trim();
+        if (value) {
+          params.set(key, value);
+        }
+      });
+
+      return `${endpoints.search}?${params.toString()}`;
+    }
+
+    function addMeta(container, label, value) {
+      const text = safeText(value).trim();
+      if (!text) {
+        return;
+      }
+
+      const item = document.createElement("span");
+      item.className = "pill";
+      item.textContent = `${label}: ${text}`;
+      container.appendChild(item);
+    }
+
+    function renderResults(data) {
+      const container = byId("results");
+      container.replaceChildren();
+      const items = Array.isArray(data && data.results) ? data.results : [];
+      byId("result-count").textContent = String(items.length);
+
+      if (items.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No results found.";
+        container.appendChild(empty);
+        return;
+      }
+
+      items.forEach((item) => {
+        const result = document.createElement("article");
+        result.className = "result";
+
+        const title = document.createElement("h3");
+        title.textContent = safeText(item.title) || safeText(item.file_name) || "Untitled";
+        result.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        addMeta(meta, "project", item.project);
+        addMeta(meta, "doc_type", item.doc_type);
+        addMeta(meta, "category", item.category);
+        addMeta(meta, "score", Number(item.score || 0).toFixed(4));
+
+        const tags = Array.isArray(item.tags)
+          ? item.tags.map((tag) => safeText(tag).trim()).filter(Boolean).join(", ")
+          : "";
+        addMeta(meta, "tags", tags);
+        result.appendChild(meta);
+
+        if (byId("show-text").checked && item.snippet) {
+          const snippet = document.createElement("p");
+          snippet.className = "snippet";
+          snippet.textContent = safeText(item.snippet);
+          result.appendChild(snippet);
+        }
+
+        container.appendChild(result);
+      });
+    }
+
+    async function runSearch(event) {
+      event.preventDefault();
+      hideSafeError();
+
+      if (!byId("query").value.trim()) {
+        showSafeError();
+        return;
+      }
+
+      const button = byId("submit-button");
+      button.disabled = true;
+
+      try {
+        const data = await fetchJson(buildSearchPath());
+        renderResults(data);
+      } catch (error) {
+        byId("result-count").textContent = "0";
+        byId("results").replaceChildren();
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "Search failed. Please check Diagnostics and Troubleshooting.";
+        byId("results").appendChild(empty);
+        showSafeError();
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    byId("search-form").addEventListener("submit", runSearch);
+    loadFilters();
+  </script>
+</body>
+</html>

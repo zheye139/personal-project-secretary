@@ -112,7 +112,7 @@ curl.exe http://127.0.0.1:6333/collections
 Create Qdrant container / 创建 Qdrant 容器：
 
 ```powershell
-docker run -d --name pkb-qdrant -p 6333:6333 -v D:/Personal_Knowledge_Base/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
+docker run -d --name pkb-qdrant -p 6333:6333 -v <your-knowledge-root>/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
 ```
 
 Use your own knowledge-base path if different.
@@ -550,3 +550,71 @@ Archive a project / 归档项目：
 python archive_project.py --project Demo_Project
 python archive_project.py --project Demo_Project --execute
 ```
+
+---
+
+## 14. M4 Local Console, Discovery, API, and Web Commands / M4 本地控制台、发现、API 和 Web 命令
+
+M4 adds a local console menu, command registry, discovery helpers, and a local FastAPI/Web interface. These features keep the local-first design: the API binds to `127.0.0.1` by default and is not intended for public network exposure.
+
+M4 新增了本地控制台菜单、命令注册表、发现辅助工具，以及本地 FastAPI/Web 界面。这些功能保持本地优先设计：API 默认绑定到 `127.0.0.1`，并且不用于公网暴露。
+
+### 14.1 Command registry / 命令注册表
+
+```powershell
+python command_registry.py
+```
+
+`command_registry.py` is the command registry. It describes available project commands and their metadata. It does not directly execute business workflows by itself.
+
+`command_registry.py` 是命令注册表。它用于描述可用的项目命令及其元数据。它本身不会直接执行业务工作流。
+
+### 14.2 Local terminal launcher / 本地终端启动器
+
+```powershell
+python launcher.py
+```
+
+`launcher.py` is the local terminal menu entry point. It helps run existing scripts from a guided menu, including status checks, ask, search, reports, backup, advanced maintenance, and starting the local API server.
+
+`launcher.py` 是本地终端菜单入口。它可以通过引导式菜单帮助运行已有脚本，包括状态检查、ask、search、报告、备份、高级维护，以及启动本地 API 服务器。
+
+### 14.3 Project discovery / 项目发现
+
+```powershell
+python project_discovery.py --summary
+python project_discovery.py --projects
+python project_discovery.py --categories
+python project_discovery.py --doc-types
+python project_discovery.py --tags
+```
+
+`project_discovery.py` reads the local manifest and discovers projects, categories, doc types, tags, files, and summary metadata. It is used by the local API and Web pages for filter lists and overview data.
+
+`project_discovery.py` 会读取本地 manifest，并发现项目、分类、文档类型、标签、文件和摘要元数据。它会被本地 API 和 Web 页面用于筛选列表和概览数据。
+
+### 14.4 Start local API and Web service / 启动本地 API 和 Web 服务
+
+```powershell
+.\run_api.ps1
+```
+
+`run_api.ps1` starts the local FastAPI/Web service on `127.0.0.1:8000` by default. It does not start as a background service and can be stopped with `Ctrl+C`.
+
+`run_api.ps1` 默认会在 `127.0.0.1:8000` 上启动本地 FastAPI/Web 服务。它不会作为后台服务启动，可以通过 `Ctrl+C` 停止。
+
+Equivalent command / 等效命令:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn api_app:app --host 127.0.0.1 --port 8000 --no-use-colors
+```
+
+### 14.5 Local FastAPI app / 本地 FastAPI 应用
+
+```powershell
+python -m uvicorn api_app:app --host 127.0.0.1 --port 8000 --no-use-colors
+```
+
+`api_app.py` provides the local API and Web page routes, including homepage, Search, Ask, Diagnostics, Troubleshooting, API overview, and FastAPI docs. The Web/API layer does not execute `update_index`, `rebuild`, `backup`, or `add_note` from the browser.
+
+`api_app.py` 提供本地 API 和 Web 页面路由，包括首页、Search、Ask、Diagnostics、Troubleshooting、API overview，以及 FastAPI docs。Web/API 层不会从浏览器执行 `update_index`、`rebuild`、`backup` 或 `add_note`。

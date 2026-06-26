@@ -23,8 +23,8 @@ Knowledge base / 知识库：
 Windows example / Windows 示例：
 
 ```text
-D:\Projects\personal-project-secretary
-D:\Personal_Knowledge_Base
+<your-repo-path>\personal-project-secretary
+<your-knowledge-root>
 ```
 
 ---
@@ -32,7 +32,7 @@ D:\Personal_Knowledge_Base
 ## 2. Copy Example Knowledge Base / 复制示例知识库
 
 ```powershell
-Copy-Item .\examples\Personal_Knowledge_Base_Template D:\Personal_Knowledge_Base -Recurse
+Copy-Item .\examples\Personal_Knowledge_Base_Template <your-knowledge-root> -Recurse
 ```
 
 You can choose another location, but `KNOWLEDGE_ROOT` must point to that location.
@@ -59,7 +59,7 @@ ollama list
 ## 4. Start Qdrant / 启动 Qdrant
 
 ```powershell
-docker run -d --name pkb-qdrant -p 6333:6333 -v D:/Personal_Knowledge_Base/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
+docker run -d --name pkb-qdrant -p 6333:6333 -v <your-knowledge-root>/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
 ```
 
 If the container already exists / 如果容器已存在：
@@ -96,7 +96,7 @@ Copy-Item .\config.example.py .\config.py
 Edit `config.py` / 编辑 `config.py`：
 
 ```python
-KNOWLEDGE_ROOT = Path(r"D:\Personal_Knowledge_Base")
+KNOWLEDGE_ROOT = Path(r"<your-knowledge-root>")
 ```
 
 ---
@@ -189,3 +189,58 @@ Close out M3 / M3 阶段封版：
 ```powershell
 python milestone_closeout.py --milestone M3
 ```
+
+---
+
+## 12. M4 Local Web/API Quick Start / M4 本地 Web/API 快速开始
+
+Start the local API/Web service / 启动本地 API/Web 服务:
+
+```powershell
+cd rag_mvp
+.\run_api.ps1
+```
+
+Open in a browser / 在浏览器中打开:
+
+```text
+http://127.0.0.1:8000/
+http://127.0.0.1:8000/search
+http://127.0.0.1:8000/ask
+http://127.0.0.1:8000/diagnostics
+http://127.0.0.1:8000/troubleshooting
+http://127.0.0.1:8000/docs
+http://127.0.0.1:8000/api
+```
+
+Page usage / 页面使用说明:
+
+- `/search` searches the local knowledge base.
+- `/ask` runs local RAG question answering.
+- `/diagnostics` checks API, Qdrant, Ollama, Discovery, and Commands status.
+- `/troubleshooting` provides local troubleshooting guidance.
+- `/docs` opens FastAPI automatic documentation.
+- `/api` returns the API overview JSON.
+
+中文：
+
+- `/search` 用于搜索本地知识库。
+- `/ask` 用于运行本地 RAG 问答。
+- `/diagnostics` 用于检查 API、Qdrant、Ollama、Discovery 和 Commands 状态。
+- `/troubleshooting` 提供本地故障排查指导。
+- `/docs` 打开 FastAPI 自动文档。
+- `/api` 返回 API 概览 JSON。
+
+Safety notes / 安全说明:
+
+- Ask does not save QA logs by default.
+- `save_log=true` is currently rejected by the Ask API.
+- Web pages do not execute `update_index`, `rebuild`, `backup`, or `add_note`.
+- The service binds to `127.0.0.1` by default and is not intended for public-network exposure.
+
+中文：
+
+- Ask 默认不会保存 QA 日志。
+- 当前 Ask API 会拒绝 `save_log=true`。
+- Web 页面不会执行 `update_index`、`rebuild`、`backup` 或 `add_note`。
+- 服务默认绑定到 `127.0.0.1`，并且不用于公网暴露。

@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+  <title>System Diagnostics</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      font-synthesis: none;
+      --page: #f4f5f2;
+      --surface: #ffffff;
+      --surface-soft: #f8f9f7;
+      --ink: #20231f;
+      --muted: #686e67;
+      --line: #d9ddd6;
+      --strong-line: #b7bdb5;
+      --green: #1e7048;
+      --amber: #8a5b12;
+      --amber-soft: #fff4d8;
+      --red: #9f2f24;
+      --red-soft: #fff0ee;
+      --focus: #1769aa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--page);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: #165f91;
+      text-underline-offset: 3px;
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--strong-line);
+      background: var(--surface);
+    }
+
+    .topbar-inner,
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar-inner {
+      display: flex;
+      min-height: 76px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 720;
+      line-height: 1.2;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .topnav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topnav a {
+      display: inline-flex;
+      min-height: 34px;
+      align-items: center;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .topnav a:hover {
+      border-color: var(--strong-line);
+      background: #ffffff;
+    }
+
+    .mode {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      white-space: nowrap;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .mode-dot,
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    main {
+      padding: 28px 0 48px;
+    }
+
+    .notice {
+      margin-bottom: 16px;
+      padding: 12px 15px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .error {
+      display: none;
+      margin-bottom: 16px;
+      padding: 12px 15px;
+      border: 1px solid #e4c987;
+      border-radius: 6px;
+      background: var(--amber-soft);
+      color: var(--amber);
+      font-size: 13px;
+    }
+
+    .error.visible {
+      display: block;
+    }
+
+    .safety-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .safety-item {
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .safety-item strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .safety-item span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+      padding: 13px 16px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .summary-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 650;
+    }
+
+    button {
+      min-height: 39px;
+      padding: 8px 14px;
+      border: 1px solid #165f91;
+      border-radius: 5px;
+      background: #165f91;
+      color: #ffffff;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.68;
+    }
+
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .check-card {
+      min-width: 0;
+      min-height: 132px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .check-card h2 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .check-status {
+      display: inline-flex;
+      margin-top: 12px;
+      padding: 3px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .check-status.ok {
+      border-color: #b9d8c5;
+      background: #edf7f1;
+      color: var(--green);
+    }
+
+    .check-status.error {
+      border-color: #e7b8b1;
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .check-message,
+    .check-detail {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .footer {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 960px) {
+      .checks {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .safety-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      .topbar-inner,
+      main {
+        width: min(100% - 24px, 1120px);
+      }
+
+      .topbar-inner,
+      .toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .topbar-inner {
+        padding: 16px 0;
+        gap: 10px;
+      }
+
+      main {
+        padding-top: 18px;
+      }
+
+      .checks,
+      .safety-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mode {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>System Diagnostics</h1>
+        <p>Read-only diagnostics for local services</p>
+      </div>
+      <nav class="topnav" aria-label="Primary navigation">
+        <a href="/">Home</a>
+        <a href="/search">Search</a>
+        <a href="/ask">Ask</a>
+        <a href="/diagnostics">Diagnostics</a>
+        <a href="/troubleshooting">Troubleshooting</a>
+        <a href="/docs">API Docs</a>
+        <a href="/api">API Overview</a>
+      </nav>
+      <div class="mode" aria-label="Local read-only diagnostics mode">
+        <span class="mode-dot" aria-hidden="true"></span>
+        <span>Local only / Read-only diagnostics</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="safety-grid" aria-label="Safety status">
+      <div class="safety-item"><strong>Local only</strong><span>Checks run through the local API.</span></div>
+      <div class="safety-item"><strong>Read-only diagnostics</strong><span>No knowledge-base files are changed.</span></div>
+      <div class="safety-item"><strong>No Ask or Search execution</strong><span>No model answer, embedding, or search query is run.</span></div>
+      <div class="safety-item"><strong>No index/rebuild/backup execution</strong><span>Maintenance actions are not available here.</span></div>
+    </section>
+
+    <div class="notice">
+      This page only checks local service status. It does not execute Ask, Search, index, rebuild, backup, or write to the knowledge base.
+    </div>
+    <div class="error" id="safe-error" role="alert">
+      Diagnostics check failed. Please inspect local terminal logs and the troubleshooting guide.
+    </div>
+
+    <section class="toolbar" aria-label="Diagnostics controls">
+      <div class="summary-status">
+        <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+        <span id="overall-status" role="status">Loading diagnostics...</span>
+      </div>
+      <button id="refresh-button" type="button">Refresh</button>
+    </section>
+
+    <section class="checks" id="checks" aria-label="Diagnostic checks"></section>
+
+    <footer class="footer">
+      Local only. Read-only diagnostics. No public network. No index/rebuild/backup execution from Web.
+    </footer>
+  </main>
+
+  <script>
+    const endpoint = "/api/v1/diagnostics";
+    const checkLabels = {
+      api: "API",
+      commands: "Commands",
+      discovery: "Discovery",
+      qdrant: "Qdrant",
+      ollama: "Ollama"
+    };
+
+    const byId = (id) => document.getElementById(id);
+
+    function safeText(value) {
+      const text = value === null || value === undefined ? "" : String(value);
+      return /[A-Za-z]:[\\/]/.test(text) ? "" : text;
+    }
+
+    function showSafeError() {
+      byId("safe-error").classList.add("visible");
+    }
+
+    function hideSafeError() {
+      byId("safe-error").classList.remove("visible");
+    }
+
+    async function fetchDiagnostics() {
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("Request unavailable");
+      }
+
+      return response.json();
+    }
+
+    function renderDetail(card, label, value) {
+      if (value === undefined || value === null || value === "") {
+        return;
+      }
+
+      const detail = document.createElement("p");
+      detail.className = "check-detail";
+      detail.textContent = `${label}: ${safeText(value)}`;
+      card.appendChild(detail);
+    }
+
+    function renderCheck(key, check) {
+      const item = check || {};
+      const card = document.createElement("article");
+      card.className = "check-card";
+
+      const heading = document.createElement("h2");
+      heading.textContent = checkLabels[key] || key;
+      card.appendChild(heading);
+
+      const status = document.createElement("span");
+      const statusText = safeText(item.status || "unknown").toLowerCase();
+      status.className = `check-status ${statusText === "ok" ? "ok" : "error"}`;
+      status.textContent = statusText === "ok" ? "ok" : "error";
+      card.appendChild(status);
+
+      const message = document.createElement("p");
+      message.className = "check-message";
+      message.textContent = safeText(item.message || "Service is not available");
+      card.appendChild(message);
+
+      renderDetail(card, "count", item.count);
+      renderDetail(card, "projects", item.project_count);
+      renderDetail(card, "files", item.file_count);
+
+      return card;
+    }
+
+    function renderDiagnostics(data) {
+      const checks = data && data.checks ? data.checks : {};
+      const container = byId("checks");
+      container.replaceChildren();
+
+      Object.keys(checkLabels).forEach((key) => {
+        container.appendChild(renderCheck(key, checks[key]));
+      });
+
+      const ok = data && data.status === "ok";
+      byId("overall-status").textContent = ok
+        ? "All local checks are available"
+        : "One or more local checks need attention";
+      byId("status-dot").style.background = ok ? "var(--green)" : "var(--amber)";
+
+      if (!ok) {
+        showSafeError();
+      }
+    }
+
+    async function loadDiagnostics() {
+      hideSafeError();
+      const button = byId("refresh-button");
+      button.disabled = true;
+
+      try {
+        const data = await fetchDiagnostics();
+        renderDiagnostics(data);
+      } catch (error) {
+        renderDiagnostics({ status: "error", checks: {} });
+        byId("overall-status").textContent = "Diagnostics are unavailable";
+        byId("status-dot").style.background = "var(--amber)";
+        showSafeError();
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    byId("refresh-button").addEventListener("click", loadDiagnostics);
+    loadDiagnostics();
+  </script>
+</body>
+</html>

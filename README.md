@@ -11,7 +11,7 @@ This project is a local RAG-based workflow for people who want to record, organi
 ## Current Release Target
 
 ```text
-v0.3.0-local-index-retrieval
+v0.4.0-local-console-webapi
 ```
 
 This version includes:
@@ -19,8 +19,9 @@ This version includes:
 - M1: local RAG knowledge-base infrastructure
 - M2: personal secretary analysis layer
 - M3: index and retrieval optimization layer
+- M4: local console, local API, and local Web interface
 
-It is still a local command-line toolbox. It does not require a Web UI or cloud service.
+It is still local-first. M4 adds a local terminal launcher, local FastAPI API, and local browser Web pages. It is not a cloud service and is not intended for public-network exposure.
 
 ---
 
@@ -46,6 +47,11 @@ This project helps you build a local knowledge workflow for:
 - single-file and project-level index updates
 - keyword and hybrid retrieval
 - retrieval quality evaluation
+- local terminal launcher
+- local FastAPI API
+- local Web homepage
+- Search and Ask browser pages
+- local diagnostics and troubleshooting pages
 
 The system is designed around two roles.
 
@@ -91,6 +97,10 @@ Responsible for:
 - Qdrant
 - Docker
 - PowerShell
+- FastAPI
+- Uvicorn
+- HTTPX
+- local Web browser
 
 ---
 
@@ -102,10 +112,10 @@ Example:
 
 ```text
 Code repository:
-D:\Projects\personal-project-secretary
+<your-repo-path>\personal-project-secretary
 
 Private knowledge base:
-D:\Personal_Knowledge_Base
+<your-knowledge-root>
 ```
 
 `KNOWLEDGE_ROOT` in `rag_mvp/config.py` should point to your private Markdown knowledge base, not to this GitHub repository.
@@ -157,7 +167,7 @@ ollama pull bge-m3
 Use a Qdrant storage path under your private knowledge base:
 
 ```powershell
-docker run -d --name pkb-qdrant -p 6333:6333 -v D:/Personal_Knowledge_Base/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
+docker run -d --name pkb-qdrant -p 6333:6333 -v <your-knowledge-root>/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
 ```
 
 If the container already exists:
@@ -186,7 +196,7 @@ Then edit `rag_mvp/config.py`:
 ```python
 from pathlib import Path
 
-KNOWLEDGE_ROOT = Path(r"D:\Personal_Knowledge_Base")
+KNOWLEDGE_ROOT = Path(r"<your-knowledge-root>")
 ```
 
 Make sure `EMBED_MODEL` matches the model name shown by `ollama list`:
@@ -221,6 +231,75 @@ You can also ask in Chinese:
 ```powershell
 python ask.py "当前项目进行到哪里了？"
 ```
+
+---
+
+## M4 Local Console, API, and Web Interface
+
+M4 adds a local interaction layer on top of the M1-M3 command-line workflow.
+
+### Local Console
+
+```powershell
+cd rag_mvp
+.\.venv\Scripts\python.exe launcher.py
+```
+
+The launcher provides a guided terminal menu for status checks, ask, search, add note, update index, reports, retrieval evaluation, backup, advanced maintenance, and starting the local API server.
+
+### Local Web/API
+
+```powershell
+cd rag_mvp
+.\run_api.ps1
+```
+
+Open in a browser:
+
+```text
+http://127.0.0.1:8000/
+http://127.0.0.1:8000/search
+http://127.0.0.1:8000/ask
+http://127.0.0.1:8000/diagnostics
+http://127.0.0.1:8000/troubleshooting
+http://127.0.0.1:8000/docs
+http://127.0.0.1:8000/api
+```
+
+Main M4 pages:
+
+- `/` - local homepage
+- `/search` - local knowledge-base search
+- `/ask` - local RAG question answering
+- `/diagnostics` - local API, Qdrant, Ollama, Discovery, and Commands diagnostics
+- `/troubleshooting` - local troubleshooting guide
+- `/docs` - FastAPI documentation
+- `/api` - API overview
+
+Main M4 API endpoints:
+
+- `GET /api`
+- `GET /api/v1/health`
+- `GET /api/v1/commands`
+- `GET /api/v1/discovery/summary`
+- `GET /api/v1/discovery/projects`
+- `GET /api/v1/discovery/doc-types`
+- `GET /api/v1/discovery/categories`
+- `GET /api/v1/discovery/tags`
+- `GET /api/v1/search`
+- `POST /api/v1/ask`
+- `GET /api/v1/diagnostics`
+
+M4 safety boundaries:
+
+- The local API binds to `127.0.0.1` by default.
+- The Web/API layer is not intended for public-network exposure.
+- Web pages do not use external CDN assets.
+- Web pages do not execute `update_index`, `rebuild`, `backup`, or `add_note`.
+- Search does not write to the knowledge base.
+- Ask does not save QA logs by default.
+- `save_log=true` is currently rejected.
+- API/Web responses should not expose local absolute paths, config URLs, raw context, prompts, raw payloads, full Markdown text, source paths, stack traces, or raw exception text.
 
 ---
 
@@ -374,6 +453,24 @@ Retrieval evaluation:
 python retrieval_eval.py --mode all
 ```
 
+---
+
+## M4 Local Console / API / Web Files
+
+| File | Purpose |
+|---|---|
+| `command_registry.py` | Command registry and metadata |
+| `launcher.py` | Local terminal menu |
+| `project_discovery.py` | Discover projects, categories, doc types, tags, files, and summary data |
+| `run_api.ps1` | Start the local API/Web service |
+| `api_app.py` | FastAPI app, API routes, and Web page routes |
+| `tests/test_api_app.py` | API and Web safety tests |
+| `web/index.html` | Local homepage |
+| `web/search.html` | Search page |
+| `web/ask.html` | Ask page |
+| `web/diagnostics.html` | Diagnostics page |
+| `web/troubleshooting.html` | Troubleshooting guide |
+
 
 ---
 
@@ -387,6 +484,9 @@ Recommended documentation files:
 - `docs/restore_guide.md` - recovery guide
 - `docs/rag_mvp_readme.md` - engineering notes
 - `docs/roadmap.md` - roadmap
+- `docs/local_console.md` - local terminal launcher guide
+- `docs/local_web_api.md` - local Web/API guide
+- `docs/m4_release_notes.md` - M4 release notes
 
 ---
 
@@ -398,6 +498,7 @@ Completed:
 M1: Local RAG knowledge-base infrastructure
 M2: Personal secretary analysis layer
 M3: Index and retrieval optimization layer
+M4: Local console, API, and Web interface
 ```
 
 ---
@@ -413,7 +514,7 @@ M3: Index and retrieval optimization layer
 ## 当前发布目标
 
 ```text
-v0.3.0-local-index-retrieval
+v0.4.0-local-console-webapi
 ```
 
 当前版本包含：
@@ -491,10 +592,10 @@ v0.3.0-local-index-retrieval
 
 ```text
 代码仓库：
-D:\Projects\personal-project-secretary
+<your-repo-path>\personal-project-secretary
 
 私人知识库：
-D:\Personal_Knowledge_Base
+<your-knowledge-root>
 ```
 
 `rag_mvp/config.py` 中的 `KNOWLEDGE_ROOT` 应指向私人 Markdown 知识库目录，而不是 GitHub 代码仓库目录。
@@ -509,7 +610,7 @@ D:\Personal_Knowledge_Base
 ollama pull qwen3:8b
 ollama pull bge-m3
 
-docker run -d --name pkb-qdrant -p 6333:6333 -v D:/Personal_Knowledge_Base/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
+docker run -d --name pkb-qdrant -p 6333:6333 -v <your-knowledge-root>/99_System/qdrant_storage:/qdrant/storage qdrant/qdrant
 
 cd <your-repo-path>\personal-project-secretary\rag_mvp
 py -3.11 -m venv .venv
@@ -686,3 +787,51 @@ M3：索引与检索能力优化层
 ```
 
 ---
+
+---
+
+## M4 本地控制台、API 与 Web 界面
+
+M4 在 M1-M3 的命令行能力之上，增加了本地使用界面：
+
+- 命令注册表：`command_registry.py`
+- 本地终端菜单：`launcher.py`
+- 项目发现：`project_discovery.py`
+- 本地 FastAPI 应用：`api_app.py`
+- 本地 API/Web 启动脚本：`run_api.ps1`
+- 本地首页：`/`
+- Search 页面：`/search`
+- Ask 页面：`/ask`
+- Diagnostics 页面：`/diagnostics`
+- Troubleshooting 页面：`/troubleshooting`
+- FastAPI 文档：`/docs`
+- API 总览：`/api`
+
+启动本地 Web/API：
+
+```powershell
+cd rag_mvp
+.\run_api.ps1
+```
+
+浏览器访问：
+
+```text
+http://127.0.0.1:8000/
+http://127.0.0.1:8000/search
+http://127.0.0.1:8000/ask
+http://127.0.0.1:8000/diagnostics
+http://127.0.0.1:8000/troubleshooting
+http://127.0.0.1:8000/docs
+http://127.0.0.1:8000/api
+```
+
+安全边界：
+
+- 默认只绑定 `127.0.0.1`。
+- 不面向公网部署。
+- Web 页面不执行 `update_index`、`rebuild`、`backup`、`add_note`。
+- Search 不写入知识库。
+- Ask 默认不保存 QA log。
+- 当前 `save_log=true` 会被拒绝。
+- 页面和 API 不应暴露本地绝对路径、config URL、raw context、prompt、raw payload、Markdown 全文、source path、stack trace 或异常原文。

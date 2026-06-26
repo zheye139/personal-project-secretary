@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+  <title>Troubleshooting Guide</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      font-synthesis: none;
+      --page: #f4f5f2;
+      --surface: #ffffff;
+      --surface-soft: #f8f9f7;
+      --ink: #20231f;
+      --muted: #686e67;
+      --line: #d9ddd6;
+      --strong-line: #b7bdb5;
+      --green: #1e7048;
+      --focus: #1769aa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--page);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: #165f91;
+      text-underline-offset: 3px;
+    }
+
+    a:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--strong-line);
+      background: var(--surface);
+    }
+
+    .topbar-inner,
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar-inner {
+      display: flex;
+      min-height: 76px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 720;
+      line-height: 1.2;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .topnav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topnav a {
+      display: inline-flex;
+      min-height: 34px;
+      align-items: center;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+
+    .topnav a:hover {
+      border-color: var(--strong-line);
+      background: #ffffff;
+    }
+
+    .mode {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      white-space: nowrap;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .mode-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    main {
+      padding: 28px 0 48px;
+    }
+
+    .safety-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .safety-item,
+    .guide-section {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+
+    .safety-item {
+      padding: 14px;
+    }
+
+    .safety-item strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .safety-item span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .notice {
+      margin-bottom: 16px;
+      padding: 12px 15px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .guide {
+      display: grid;
+      gap: 14px;
+    }
+
+    .guide-section {
+      padding: 16px;
+    }
+
+    .guide-section h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      line-height: 1.3;
+    }
+
+    .guide-section p,
+    .guide-section ul {
+      margin: 8px 0 0;
+    }
+
+    .guide-section ul {
+      padding-left: 20px;
+    }
+
+    code,
+    pre {
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    code {
+      color: #374151;
+      font-size: 13px;
+    }
+
+    pre {
+      margin: 10px 0 0;
+      padding: 12px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--surface-soft);
+      font-size: 13px;
+    }
+
+    .footer {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 900px) {
+      .safety-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      .topbar-inner,
+      main {
+        width: min(100% - 24px, 1120px);
+      }
+
+      .topbar-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 16px 0;
+        gap: 10px;
+      }
+
+      main {
+        padding-top: 18px;
+      }
+
+      .safety-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mode {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>Troubleshooting Guide</h1>
+        <p>Local read-only checks for common Web and API issues</p>
+      </div>
+      <nav class="topnav" aria-label="Primary navigation">
+        <a href="/">Home</a>
+        <a href="/search">Search</a>
+        <a href="/ask">Ask</a>
+        <a href="/diagnostics">Diagnostics</a>
+        <a href="/troubleshooting">Troubleshooting</a>
+        <a href="/docs">API Docs</a>
+        <a href="/api">API Overview</a>
+      </nav>
+      <div class="mode" aria-label="Local read-only guide mode">
+        <span class="mode-dot" aria-hidden="true"></span>
+        <span>Local only / Read-only guide</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="safety-grid" aria-label="Safety status">
+      <div class="safety-item"><strong>Local only</strong><span>This guide is served by the local app.</span></div>
+      <div class="safety-item"><strong>Read-only guide</strong><span>It does not change project or knowledge-base files.</span></div>
+      <div class="safety-item"><strong>No public network</strong><span>No external assets are loaded.</span></div>
+      <div class="safety-item"><strong>No Ask/Search/index/rebuild/backup</strong><span>This page does not execute local actions.</span></div>
+    </section>
+
+    <div class="notice">
+      This page does not execute Ask, Search, index, rebuild, or backup. It is a local reference for checking services safely.
+    </div>
+
+    <section class="guide" aria-label="Troubleshooting sections">
+      <article class="guide-section">
+        <h2>A. API service does not open</h2>
+        <p>Start the local API in a PowerShell terminal:</p>
+        <pre><code>.\run_api.ps1</code></pre>
+        <p>Then open:</p>
+        <pre><code>http://127.0.0.1:8000/
+http://127.0.0.1:8000/docs</code></pre>
+      </article>
+
+      <article class="guide-section">
+        <h2>B. Search fails</h2>
+        <ul>
+          <li><code>keyword</code> mode mainly depends on Qdrant and the current index.</li>
+          <li><code>vector</code> and <code>hybrid</code> also depend on local Ollama embedding.</li>
+          <li>Open <a href="/diagnostics">Diagnostics</a> first to check local service status.</li>
+        </ul>
+      </article>
+
+      <article class="guide-section">
+        <h2>C. Ask fails</h2>
+        <ul>
+          <li>Ask depends on Qdrant, Ollama, and index state.</li>
+          <li>Ask may take longer than simple Search requests.</li>
+          <li>Current Web Ask does not save QA logs.</li>
+          <li>If Ask fails, check <a href="/diagnostics">Diagnostics</a> first.</li>
+        </ul>
+      </article>
+
+      <article class="guide-section">
+        <h2>D. Diagnostics shows Qdrant unavailable</h2>
+        <p>Check whether the local Qdrant container is running:</p>
+        <pre><code>docker ps</code></pre>
+      </article>
+
+      <article class="guide-section">
+        <h2>E. Diagnostics shows Ollama unavailable</h2>
+        <p>Check whether local Ollama is available:</p>
+        <pre><code>ollama list</code></pre>
+      </article>
+
+      <article class="guide-section">
+        <h2>F. Page returns 404</h2>
+        <ul>
+          <li><code>/api</code> is the API overview.</li>
+          <li><code>/api/v1/...</code> routes are API endpoints.</li>
+          <li><code>/docs</code> is the FastAPI documentation.</li>
+          <li><code>/favicon.ico</code> is not functionally important if a browser checks it.</li>
+        </ul>
+      </article>
+
+      <article class="guide-section">
+        <h2>G. Information that should not appear on pages</h2>
+        <p>Web pages and API responses should not display:</p>
+        <ul>
+          <li>Windows drive-letter absolute local paths</li>
+          <li>private knowledge-base absolute paths</li>
+          <li>config URLs</li>
+          <li>raw context</li>
+          <li>prompt</li>
+          <li>source path</li>
+          <li>raw payload</li>
+          <li>full Markdown text</li>
+          <li>stack traces</li>
+        </ul>
+      </article>
+    </section>
+
+    <footer class="footer">
+      Local only. Read-only guide. No public network. No Ask/Search/index/rebuild/backup execution.
+    </footer>
+  </main>
+</body>
+</html>
