@@ -1,3 +1,6 @@
 qdrant-client
 requests
 tqdm
+fastapi
+uvicorn
+httpx
