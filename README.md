@@ -524,7 +524,7 @@ v0.4.0-local-console-webapi
 - M3：索引与检索能力优化层
 - M4：本地控制台、本地API和本地Web界面
 
-它依然是本地优先的。M4新增了本地终端启动器、本地FastAPI API以及本地浏览器网页。它并非云服务，也不 intended 用于公网暴露。
+它依然是本地优先的。M4新增了本地终端启动器、本地FastAPI API以及本地浏览器网页。它并非云服务，也不建议用于公网暴露。
 
 ---
 
@@ -775,12 +775,15 @@ python update_index.py
 
 推荐文档文件：
 
-- `docs/quickstart.md`：双语快速开始
-- `docs/environment_setup.md`：环境安装说明
-- `docs/command_reference.md`：命令速查表
-- `docs/restore_guide.md`：恢复流程
-- `docs/rag_mvp_readme.md`：工程说明
-- `docs/roadmap.md`：路线图
+- `docs/quickstart.md`：双语快速开始  
+- `docs/environment_setup.md`：环境安装说明  
+- `docs/command_reference.md`：命令速查表  
+- `docs/restore_guide.md`：恢复流程  
+- `docs/rag_mvp_readme.md`：工程说明  
+- `docs/roadmap.md`：路线图  
+- `docs/local_console.md`：本地终端菜单说明  
+- `docs/local_web_api.md`：本地 Web/API 说明  
+- `docs/m4_release_notes.md`：M4 发布说明
 
 ---
 
@@ -792,6 +795,7 @@ python update_index.py
 M1：本地 RAG 知识库基础设施
 M2：个人秘书分析层
 M3：索引与检索能力优化层
+M4：本地控制台、API 与 Web 界面
 ```
 
 ---
