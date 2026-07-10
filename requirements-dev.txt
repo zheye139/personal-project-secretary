@@ -1,6 +1,2 @@
 -r requirements.txt
 pytest
-qdrant-client
-requests
-PyYAML
-python-frontmatter

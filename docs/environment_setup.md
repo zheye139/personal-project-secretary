@@ -93,10 +93,13 @@ curl.exe http://127.0.0.1:6333/collections
 ## 4. Create Python Environment / 创建 Python 环境
 
 ```powershell
-cd <your-repo-path>\personal-project-secretary\rag_mvp
+cd <your-repo-path>\Knowledge_Operating_System\rag_mvp
+
 py -3.11 -m venv .venv
-.\.venv\Scripts\activate
-pip install -r ..\requirements.txt
+.\.venv\Scripts\Activate.ps1
+
+python -m pip install --upgrade pip
+python -m pip install -r ..\requirements.txt
 ```
 
 Check dependencies / 检查依赖：
@@ -400,7 +403,7 @@ Security notes / 安全说明:
 - The local API binds to `127.0.0.1` by default.
 - The Web/API service is not intended for public-network exposure.
 - The Web pages do not load external CDN assets.
-- Search and Ask still depend on the local Qdrant index and local Ollama services.
+- Search and Ask depend on the configured Qdrant Vector Store and the current index state. Ask and vector/hybrid retrieval may also depend on the configured Ollama service.
 
 ## M5 Vector Store Configuration / M5 Vector Store 配置
 

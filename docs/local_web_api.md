@@ -84,11 +84,15 @@ http://127.0.0.1:8000/
 - API 响应不会返回 source paths。
 - 错误提示不会显示堆栈跟踪或原始异常文本。
 
-## Notes / 备注
-
-Search and Ask depend on local Qdrant and the current index state. Ask and vector/hybrid retrieval can also depend on local Ollama.
-
-Search 和 Ask 依赖本地 Qdrant 以及当前索引状态。Ask 和 vector/hybrid 检索也可能依赖本地 Ollama。
+## Notes / 备注  
+  
+Search and Ask depend on the configured Qdrant Vector Store and the current index state. Qdrant may run locally or on a reachable LAN or remote host. Ask and vector/hybrid retrieval may also depend on the configured Ollama service.  
+  
+Search 和 Ask 依赖当前配置的 Qdrant Vector Store 以及当前索引状态。Qdrant 可以运行在本机，也可以运行在可访问的局域网或远程主机。Ask 和 vector/hybrid 检索还可能依赖当前配置的 Ollama 服务。  
+  
+The Web/API service itself still binds to `127.0.0.1:8000` by default. Remote Qdrant support does not make the Web/API a public-network service.  
+  
+Web/API 服务本身仍默认绑定到 `127.0.0.1:8000`。支持远程 Qdrant 不代表 Web/API 已成为公网服务。
 
 # Local Web API — M5 Addendum
 

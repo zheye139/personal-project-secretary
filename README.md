@@ -1168,7 +1168,7 @@ python backup_kb.py
 | `check_env.py` | 检查 Ollama、模型、Qdrant 和 Collection 状态 |
 | `ingest.py` | 解析 Markdown 文件并索引到 Qdrant |
 | `ask.py` | 执行 RAG 问答 |
-| `search_docs.py` | 搜索已检索到的知识片段，不调用聊天模型 |
+| `search_docs.py` | 搜索已建立索引的知识片段，不调用聊天模型 |
 | `add_note.py` | 新增带 Frontmatter 的 Markdown 笔记 |
 | `inbox_import.py` | 从 `00_Inbox` 导入 Markdown 文件 |
 | `project_template.py` | 创建标准项目目录和 Markdown 模板 |
