@@ -1,5 +1,4 @@
 import argparse
-import os
 import re
 import sys
 import uuid
@@ -20,6 +19,7 @@ from qdrant_client.models import (
 
 import config
 import manifest_utils
+import vector_store_config
 
 
 # ============================================================
@@ -31,8 +31,8 @@ KNOWLEDGE_ROOT = config.KNOWLEDGE_ROOT
 OLLAMA_URL = config.OLLAMA_URL
 EMBED_MODEL = config.EMBED_MODEL
 
-QDRANT_URL = config.QDRANT_URL
-COLLECTION_NAME = config.COLLECTION_NAME
+QDRANT_URL = vector_store_config.get_qdrant_url()
+COLLECTION_NAME = vector_store_config.get_collection_name()
 
 CHUNK_MAX_CHARS = getattr(config, "CHUNK_MAX_CHARS", 800)
 
@@ -52,18 +52,7 @@ except Exception:
 # 避免访问本机服务时走系统代理
 # ============================================================
 
-for key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-]:
-    os.environ.pop(key, None)
-
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+vector_store_config.configure_qdrant_environment()
 
 
 def now_iso() -> str:
@@ -87,11 +76,7 @@ def get_qdrant_client() -> QdrantClient:
     """
     创建 Qdrant 客户端。
     """
-    return QdrantClient(
-        url=QDRANT_URL,
-        check_compatibility=False,
-        timeout=120,
-    )
+    return vector_store_config.get_qdrant_client(timeout=120)
 
 
 def collection_exists(client: QdrantClient) -> bool:
@@ -315,6 +300,26 @@ def build_payload_metadata(path: Path, text: str) -> tuple[dict, str]:
     }
 
     return payload_base, body
+
+
+def build_manifest_metadata_from_payload(payload_base: dict) -> dict:
+    """
+    从 Qdrant payload_base 中提取需要写入 manifest 的 metadata。
+
+    用途：
+    1. launcher.py 项目选择。
+    2. Web UI 下拉框。
+    3. project_discovery.py 扫描。
+    4. 文件删除后仍能根据 manifest 判断 project/doc_type。
+    """
+    return {
+        "category": payload_base.get("category", ""),
+        "project": payload_base.get("project", ""),
+        "doc_type": payload_base.get("doc_type", ""),
+        "title": payload_base.get("title", ""),
+        "file_name": payload_base.get("file_name", ""),
+        "tags": payload_base.get("tags", []),
+    }
 
 
 def split_text(text: str, max_chars: int = CHUNK_MAX_CHARS) -> list[str]:
@@ -569,29 +574,39 @@ def is_valid_markdown_file_for_index(path: Path) -> bool:
 def index_markdown_file(client: QdrantClient, path: Path) -> dict:
     """
     将单个 Markdown 文件写入 Qdrant，并返回 manifest record。
+
+    M4.0 增强：
+    1. Qdrant payload 仍保持原有结构。
+    2. manifest record 同步保存 category/project/doc_type/title/file_name/tags。
+    3. 后续 launcher.py / Web UI 可以直接读取 manifest 构建选择项。
     """
     text = read_text(path)
     source = manifest_utils.normalize_rel_path(path)
 
+    payload_base, body = build_payload_metadata(path, text)
+    manifest_metadata = build_manifest_metadata_from_payload(payload_base)
+
     if not text.strip():
         print(f"  [跳过空文件] {source}")
+
         return manifest_utils.build_manifest_record(
             path=path,
             chunk_count=0,
             point_ids=[],
+            metadata=manifest_metadata,
         )
-
-    payload_base, body = build_payload_metadata(path, text)
 
     content_for_index = body.strip() if body.strip() else text.strip()
     chunks = split_text(content_for_index)
 
     if not chunks:
         print(f"  [跳过无有效内容文件] {source}")
+
         return manifest_utils.build_manifest_record(
             path=path,
             chunk_count=0,
             point_ids=[],
+            metadata=manifest_metadata,
         )
 
     fingerprint = manifest_utils.build_file_fingerprint(path)
@@ -633,12 +648,20 @@ def index_markdown_file(client: QdrantClient, path: Path) -> dict:
             wait=True,
         )
 
-    print(f"  已入库：{source} | chunks={len(points)}")
+    print(
+        "  已入库："
+        f"{source} | "
+        f"project={payload_base.get('project', '')} | "
+        f"category={payload_base.get('category', '')} | "
+        f"doc_type={payload_base.get('doc_type', '')} | "
+        f"chunks={len(points)}"
+    )
 
     return manifest_utils.build_manifest_record(
         path=path,
         chunk_count=len(point_ids),
         point_ids=point_ids,
+        metadata=manifest_metadata,
     )
 
 

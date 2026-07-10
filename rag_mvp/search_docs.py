@@ -1,5 +1,4 @@
 import argparse
-import os
 import re
 import sys
 from pathlib import Path
@@ -9,6 +8,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 import config
+import vector_store_config
 
 
 # ============================================================
@@ -17,8 +17,8 @@ import config
 
 OLLAMA_URL = config.OLLAMA_URL
 EMBED_MODEL = config.EMBED_MODEL
-QDRANT_URL = config.QDRANT_URL
-COLLECTION_NAME = config.COLLECTION_NAME
+QDRANT_URL = vector_store_config.get_qdrant_url()
+COLLECTION_NAME = vector_store_config.get_collection_name()
 API_SEARCH_MODES = {"keyword", "vector", "hybrid"}
 API_SEARCH_MIN_LIMIT = 1
 API_SEARCH_MAX_LIMIT = 20
@@ -41,28 +41,13 @@ except Exception:
 # 避免访问本机服务时走系统代理
 # ============================================================
 
-for key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-]:
-    os.environ.pop(key, None)
-
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+vector_store_config.configure_qdrant_environment()
 
 def get_qdrant_client() -> QdrantClient:
     """
     创建 Qdrant 客户端。
     """
-    return QdrantClient(
-        url=QDRANT_URL,
-        check_compatibility=False,
-        timeout=120,
-    )
+    return vector_store_config.get_qdrant_client(timeout=120)
 
 
 def embed_text(text: str) -> list[float]:

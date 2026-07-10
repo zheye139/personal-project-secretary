@@ -30,14 +30,14 @@ def sanitize_filename(text: str) -> str:
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
     """
-    parse Markdown   Frontmatter. 
-     :
+    解析 Markdown 顶部 Frontmatter。
+    支持：
     ---
     title: xxx
     category: project
-    project: Demo_Project
+    project: Personal_Project_Assistant
     doc_type: progress_log
-    tags: [RAG,  record]
+    tags: [RAG, 进度记录]
     ---
     """
     text = text.lstrip()
@@ -105,13 +105,13 @@ def build_frontmatter(
 
 def infer_defaults(path: Path, metadata: dict) -> dict:
     """
-    for  Frontmatter field default . 
+    对缺失的 Frontmatter 字段做默认补全。
     """
     now = datetime.now().isoformat(timespec="seconds")
 
     title = metadata.get("title") or path.stem
     category = metadata.get("category") or "project"
-    project = metadata.get("project") or "Demo_Project"
+    project = metadata.get("project") or "Personal_Project_Assistant"
     doc_type = metadata.get("doc_type") or metadata.get("type") or "note"
     tags = metadata.get("tags") or []
     created = metadata.get("created") or now
@@ -135,8 +135,8 @@ def build_target_dir(metadata: dict) -> Path:
 
     if category not in CATEGORY_DIR_MAP:
         raise ValueError(
-            f"Unsupported category:{category}. "
-            f"Available options:{', '.join(CATEGORY_DIR_MAP.keys())}"
+            f"不支持的 category：{category}。"
+            f"可选值：{', '.join(CATEGORY_DIR_MAP.keys())}"
         )
 
     root = KNOWLEDGE_ROOT / CATEGORY_DIR_MAP[category]
@@ -243,28 +243,28 @@ def import_file(source_path: Path, dry_run: bool = True) -> tuple[Path, Path]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Personal Project Secretary + Knowledge Base:import 00_Inbox in Markdown file"
+        description="个人项目秘书 + 数据知识库：导入 00_Inbox 中的 Markdown 文件"
     )
 
     parser.add_argument(
         "--execute",
         action="store_true",
-        help="actuallyexecute import. Preview by default and do not move files.",
+        help="真正执行导入。默认只预览，不移动文件。",
     )
 
     args = parser.parse_args()
     dry_run = not args.execute
 
-    print("Personal Project Secretary + Knowledge Base:Inbox import tool")
-    print(f"Inbox directory:{INBOX_DIR}")
-    print(f"execute import:{args.execute}")
+    print("个人项目秘书 + 数据知识库：Inbox 导入工具")
+    print(f"Inbox 目录：{INBOX_DIR}")
+    print(f"执行导入：{args.execute}")
 
     files = collect_inbox_files()
 
-    print(f"\nfound Inbox Markdown file count:{len(files)}")
+    print(f"\n发现 Inbox Markdown 文件数量：{len(files)}")
 
     if not files:
-        print("No importable Markdown files were found. ")
+        print("没有发现可导入的 Markdown 文件。")
         return
 
     for source_path in files:
@@ -275,22 +275,22 @@ def main():
             )
 
             print("\n---")
-            print(f" file:{source_path}")
-            print(f"goalfile:{target_path}")
-            print(f"archive location:{archive_path}")
+            print(f"源文件：{source_path}")
+            print(f"目标文件：{target_path}")
+            print(f"归档位置：{archive_path}")
 
         except Exception as e:
             print("\n---")
-            print(f" failed:{source_path}")
-            print(f"reason:{e}")
+            print(f"处理失败：{source_path}")
+            print(f"原因：{e}")
 
     if dry_run:
-        print("\nPreview mode. No files were moved. ")
-        print("After confirmation, run:")
+        print("\n当前为预览模式，未移动任何文件。")
+        print("确认无误后执行：")
         print("python inbox_import.py --execute")
     else:
-        print("\nimportcompleted. ")
-        print("recommended next command:")
+        print("\n导入完成。")
+        print("建议下一步执行：")
         print("python update_index.py")
 
 

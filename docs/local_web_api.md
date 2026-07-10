@@ -89,3 +89,48 @@ http://127.0.0.1:8000/
 Search and Ask depend on local Qdrant and the current index state. Ask and vector/hybrid retrieval can also depend on local Ollama.
 
 Search 和 Ask 依赖本地 Qdrant 以及当前索引状态。Ask 和 vector/hybrid 检索也可能依赖本地 Ollama。
+
+# Local Web API — M5 Addendum
+
+# 本地 Web API — M5 增补
+
+Replace:
+
+```text
+Search and Ask depend on local Qdrant.
+```
+
+with:
+
+```text
+Search and Ask depend on the configured Qdrant Vector Store.
+```
+
+中文：
+
+```text
+Search 和 Ask 依赖当前配置的 Qdrant Vector Store。
+```
+
+Qdrant may run locally or on a reachable LAN/remote host.
+
+Qdrant 可以运行在本机，也可以运行在可访问的局域网/远程主机。
+
+The Web/API service itself still binds to:
+
+```text
+127.0.0.1:8000
+```
+
+by default.
+
+Remote Qdrant support does not mean the Web/API is a public-network service.
+
+支持远程 Qdrant 不代表 Web/API 已变成公网服务。
+
+If PowerShell blocks `run_api.ps1`:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\run_api.ps1
+```

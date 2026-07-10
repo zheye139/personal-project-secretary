@@ -401,3 +401,174 @@ Security notes / 安全说明:
 - The Web/API service is not intended for public-network exposure.
 - The Web pages do not load external CDN assets.
 - Search and Ask still depend on the local Qdrant index and local Ollama services.
+
+## M5 Vector Store Configuration / M5 Vector Store 配置
+
+M5 adds a shared Vector Store configuration layer.
+
+Configuration priority:
+
+```text
+environment variables
+    ↓
+config.py
+    ↓
+built-in defaults
+```
+
+Supported environment variables:
+
+```text
+PKB_KNOWLEDGE_ROOT
+PKB_OLLAMA_URL
+PKB_CHAT_MODEL
+PKB_EMBED_MODEL
+PKB_QDRANT_URL
+PKB_QDRANT_TIMEOUT
+PKB_QDRANT_COLLECTION
+```
+
+---
+
+## Local Qdrant / 本机 Qdrant
+
+```powershell
+$env:PKB_QDRANT_URL = "http://127.0.0.1:6333"
+$env:PKB_QDRANT_COLLECTION = "personal_knowledge_base"
+```
+
+---
+
+## Remote Qdrant / 远程 Qdrant
+
+```powershell
+$env:PKB_QDRANT_URL = "http://<qdrant-host>:6333"
+$env:PKB_QDRANT_COLLECTION = "personal_knowledge_base"
+```
+
+Network checks:
+
+```powershell
+ping <qdrant-host>
+Test-NetConnection <qdrant-host> -Port 6333
+curl.exe http://<qdrant-host>:6333/
+```
+
+---
+
+## VMware NAT / VMware NAT 模式
+
+Recommended M5 VM setup:
+
+```text
+VMware Network Adapter:
+NAT
+```
+
+On the host:
+
+```powershell
+ipconfig
+```
+
+Find:
+
+```text
+VMware Network Adapter VMnet8
+IPv4: <host-ip>
+```
+
+In the VM:
+
+```powershell
+Test-NetConnection <host-ip> -Port 6333
+curl.exe http://<host-ip>:6333/
+```
+
+Then:
+
+```powershell
+$env:PKB_QDRANT_URL = "http://<host-ip>:6333"
+```
+
+---
+
+## Docker Port Mapping / Docker 端口映射
+
+```powershell
+docker ps
+```
+
+Cross-PC access normally requires a reachable mapping such as:
+
+```text
+0.0.0.0:6333->6333/tcp
+```
+
+---
+
+## Firewall / 防火墙
+
+If TCP 6333 fails:
+
+- check Qdrant service
+- check Docker mapping
+- check Windows Firewall
+- check VMware network mode
+- check the active Windows network profile
+
+Do not expose Qdrant directly to the public Internet without a dedicated security design.
+
+---
+
+## Python Dependencies on a New PC / 新 PC Python 依赖
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+python -m pip install --upgrade pip
+python -m pip install -r ..\requirements.txt
+```
+
+Package name:
+
+```text
+qdrant-client
+```
+
+Import name:
+
+```text
+qdrant_client
+```
+
+Each PC and each virtual environment must install dependencies independently.
+
+---
+
+## PowerShell Script Policy / PowerShell 脚本策略
+
+If `run_api.ps1` is blocked:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\run_api.ps1
+```
+
+This setting only applies to the current PowerShell process.
+
+---
+
+## Non-destructive Validation / 非破坏性验证
+
+```powershell
+python check_env.py
+python status.py
+python inspect_collection.py
+python list_docs.py
+python search_docs.py "M5 Vector Store"
+python ask.py "请简单说明当前知识库是什么"
+```
+
+`health_check_full.py` is a write-path test and may create/delete a temporary collection.

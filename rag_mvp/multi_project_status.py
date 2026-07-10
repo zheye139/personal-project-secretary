@@ -1,5 +1,4 @@
 import argparse
-import os
 import re
 import requests
 import sys
@@ -10,16 +9,17 @@ from pathlib import Path
 from qdrant_client import QdrantClient
 
 import config
+import vector_store_config
 
 
 # ============================================================
-# base configuration
+# 基础配置
 # ============================================================
 
 OLLAMA_URL = config.OLLAMA_URL
 CHAT_MODEL = config.CHAT_MODEL
-QDRANT_URL = config.QDRANT_URL
-COLLECTION_NAME = config.COLLECTION_NAME
+QDRANT_URL = vector_store_config.get_qdrant_url()
+COLLECTION_NAME = vector_store_config.get_collection_name()
 KNOWLEDGE_ROOT = config.KNOWLEDGE_ROOT
 
 MULTI_PROJECT_STATUS_DIR = getattr(
@@ -30,7 +30,7 @@ MULTI_PROJECT_STATUS_DIR = getattr(
 
 
 # ============================================================
-# Windows / PowerShell English output 
+# Windows / PowerShell 中文输出处理
 # ============================================================
 
 try:
@@ -41,21 +41,10 @@ except Exception:
 
 
 # ============================================================
-# Prevent local service requests from going through system proxies.
+# 避免访问本机服务时走系统代理
 # ============================================================
 
-for key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-]:
-    os.environ.pop(key, None)
-
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+vector_store_config.configure_qdrant_environment()
 
 
 DEFAULT_DOC_TYPES = [
@@ -74,7 +63,7 @@ DEFAULT_DOC_TYPES = [
 
 def clean_model_response(text: str) -> str:
     """
-    cleanup qwen3 cancan  <think>...</think> content. 
+    清理 qwen3 可能输出的 <think>...</think> 内容。
     """
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     return text.strip()
@@ -82,19 +71,15 @@ def clean_model_response(text: str) -> str:
 
 def get_qdrant_client() -> QdrantClient:
     """
-    create Qdrant  . 
+    创建 Qdrant 客户端。
     """
-    return QdrantClient(
-        url=QDRANT_URL,
-        check_compatibility=False,
-        timeout=60,
-    )
+    return vector_store_config.get_qdrant_client(timeout=60)
 
 
 def parse_csv_values(raw_values: list[str] | None) -> list[str]:
     """
-    parsecommand incanduplicate, can . 
-    for example:
+    解析命令行中可重复、可逗号分隔的参数。
+    例如：
     --project A --project B
     --project A,B
     """
@@ -112,7 +97,7 @@ def parse_csv_values(raw_values: list[str] | None) -> list[str]:
 
 def parse_doc_types(raw_doc_types: list[str] | None) -> list[str]:
     """
-    parse andmulti-project  doc_type. 
+    解析参与多项目汇总的 doc_type。
     """
     parsed = parse_csv_values(raw_doc_types)
 
@@ -124,7 +109,7 @@ def parse_doc_types(raw_doc_types: list[str] | None) -> list[str]:
 
 def safe_text_preview(text: str, max_chars: int = 160) -> str:
     """
-     preview . 
+    生成终端预览文本。
     """
     text = text.replace("\n", " ").strip()
 
@@ -141,18 +126,18 @@ def load_all_project_contexts(
     max_points: int = 500,
 ) -> dict[str, list[dict]]:
     """
-    from Qdrant inreadproject records, and  project  . 
+    从 Qdrant 中读取项目资料，并按 project 分组。
 
-    rules:
-    1. if include_projects notis empty, only this . 
-    2. exclude_projects in . 
-    3. onlyreadspecified doc_type chunk. 
+    规则：
+    1. 如果 include_projects 不为空，只汇总这些项目。
+    2. exclude_projects 中的项目会被排除。
+    3. 只读取指定 doc_type 的片段。
     """
     client = get_qdrant_client()
 
     if not client.collection_exists(COLLECTION_NAME):
         raise RuntimeError(
-            f"collection does not exist:{COLLECTION_NAME}, please first  python update_index.py"
+            f"集合不存在：{COLLECTION_NAME}，请先运行 python update_index.py"
         )
 
     grouped = defaultdict(list)
@@ -244,12 +229,12 @@ def trim_project_contexts(
     max_chars_per_project: int,
 ) -> dict[str, list[dict]]:
     """
-     model ,   prompt  . 
+    控制传给模型的上下文长度，避免 prompt 太长。
 
-    sortrules:
-    1.  each recentupdated at . 
-    2. each  max_items_per_project  . 
-    3. each  max_chars_per_project  . 
+    排序规则：
+    1. 按每个项目最近更新时间倒序。
+    2. 每个项目最多保留 max_items_per_project 条。
+    3. 每个项目最多保留 max_chars_per_project 字符。
     """
     project_latest = []
 
@@ -287,24 +272,24 @@ def trim_project_contexts(
 
 def build_context_text(grouped_contexts: dict[str, list[dict]]) -> str:
     """
-    buildmulti-project . 
+    构建多项目上下文。
     """
     lines = []
 
     for project, items in grouped_contexts.items():
-        lines.append(f"#  :{project}")
+        lines.append(f"# 项目：{project}")
         lines.append("")
 
         for index, ctx in enumerate(items, start=1):
-            lines.append(f"## records {index}")
+            lines.append(f"## 资料 {index}")
             lines.append("")
-            lines.append(f"- document type:{ctx.get('doc_type', '')}")
-            lines.append(f"- title:{ctx.get('title', '')}")
-            lines.append(f"- tags:{ctx.get('tags', [])}")
-            lines.append(f"- file:{ctx.get('file_name', '')}")
-            lines.append(f"- source:{ctx.get('source', '')}")
-            lines.append(f"- chunk:{ctx.get('chunk_index', '')}")
-            lines.append(f"- updated at:{ctx.get('updated_at', '')}")
+            lines.append(f"- 文档类型：{ctx.get('doc_type', '')}")
+            lines.append(f"- 标题：{ctx.get('title', '')}")
+            lines.append(f"- 标签：{ctx.get('tags', [])}")
+            lines.append(f"- 文件：{ctx.get('file_name', '')}")
+            lines.append(f"- 来源：{ctx.get('source', '')}")
+            lines.append(f"- 片段：{ctx.get('chunk_index', '')}")
+            lines.append(f"- 更新时间：{ctx.get('updated_at', '')}")
             lines.append("")
             lines.append(ctx.get("text", ""))
             lines.append("")
@@ -317,7 +302,7 @@ def build_context_text(grouped_contexts: dict[str, list[dict]]) -> str:
 
 def build_source_summary(grouped_contexts: dict[str, list[dict]]) -> list[str]:
     """
-     source list. 
+    生成来源清单。
     """
     sources = []
 
@@ -337,10 +322,10 @@ def build_source_summary(grouped_contexts: dict[str, list[dict]]) -> list[str]:
 
 def build_project_overview_for_terminal(grouped_contexts: dict[str, list[dict]]) -> None:
     """
-    in in candidate andrecords . 
+    在终端中打印候选项目和资料概览。
     """
     print("")
-    print("candidate project records :")
+    print("候选项目资料概览：")
 
     for project, items in grouped_contexts.items():
         latest = ""
@@ -353,10 +338,10 @@ def build_project_overview_for_terminal(grouped_contexts: dict[str, list[dict]])
                 latest = updated_at
 
         print("")
-        print(f"-  :{project}")
-        print(f"  chunk count:{len(items)}")
-        print(f"  recentupdated at:{latest}")
-        print(f"  document type statistics:{dict(doc_type_count)}")
+        print(f"- 项目：{project}")
+        print(f"  片段数量：{len(items)}")
+        print(f"  最近更新时间：{latest}")
+        print(f"  文档类型统计：{dict(doc_type_count)}")
 
         for index, item in enumerate(items[:3], start=1):
             print(
@@ -369,18 +354,18 @@ def build_project_overview_for_terminal(grouped_contexts: dict[str, list[dict]])
 
 def generate_multi_project_status(grouped_contexts: dict[str, list[dict]]) -> str:
     """
-    call qwen3:8b  project status . 
+    调用 qwen3:8b 生成多个项目状态汇总。
     """
     if not grouped_contexts:
         lines = [
-            "# multi-project status summary",
+            "# 多项目状态汇总",
             "",
-            "Loaded project records are available for analysis. ",
+            "当前没有读取到可用于汇总的项目资料。",
             "",
-            "recommendations:",
+            "建议：",
             "",
-            "1. firstas  progress_log, next_steps, project_brief or weekly_report. ",
-            "2. execute python update_index.py  re- script. ",
+            "1. 先为项目补充 progress_log、next_steps、project_brief 或 weekly_report。",
+            "2. 执行 python update_index.py 后重新运行本脚本。",
             "",
         ]
         return "\n".join(lines)
@@ -388,50 +373,50 @@ def generate_multi_project_status(grouped_contexts: dict[str, list[dict]]) -> st
     context_text = build_context_text(grouped_contexts)
 
     prompt_lines = [
-        " is Personal Project Secretaryandmulti-project . ",
+        "你是我的个人项目秘书和多项目管理助手。",
         "",
-        "please knowledge base records,  multi-project status summary. ",
+        "请根据下面的知识库资料，生成一份多项目状态汇总。",
         "",
-        "[knowledge base records]",
+        "【知识库资料】",
         context_text,
         "",
-        "[ ]",
-        "Use English Markdown output. ",
+        "【输出要求】",
+        "请使用中文 Markdown 输出。",
         "",
-        "# multi-project status summary",
+        "# 多项目状态汇总",
         "",
-        "## 1.  ",
-        "  3 to 6  multiple projects . ",
+        "## 1. 总体结论",
+        "用 3 到 6 条概括当前多个项目的整体状态。",
         "",
-        "## 2. project status ",
-        "please ,  :",
+        "## 2. 项目状态总表",
+        "请用表格输出，列包含：",
         "",
-        "|   | current status | recent  | current issues/risks | next-step recommendations |",
+        "| 项目 | 当前状态 | 最近进展 | 当前问题/风险 | 下一步建议 |",
         "| --- | --- | --- | --- | --- |",
         "",
-        " :",
-        "1. each . ",
-        "2. current status . ",
-        "3. current issues/risksif insufficient records, please 'insufficient records, no '. ",
-        "4. next-step recommendations canexecute. ",
+        "要求：",
+        "1. 每个项目一行。",
+        "2. 当前状态要简短明确。",
+        "3. 当前问题/风险如果资料不足，请写“资料不足，无法确认”。",
+        "4. 下一步建议必须尽量可执行。",
         "",
-        "## 3. recent ",
-        "listrecentrecords or . ",
+        "## 3. 最近活跃项目",
+        "列出最近资料更新较多或进展较明显的项目。",
         "",
-        "## 4. cancan ",
-        "listrecords , long-term has next stepsormissingrecent . ",
+        "## 4. 可能停滞项目",
+        "列出资料较少、长期没有明确下一步或缺少最近进展的项目。",
         "",
-        "## 5.  issue",
-        "summarymultiple projectsinduplicate issue, risksormaintenance . ",
+        "## 5. 跨项目共性问题",
+        "总结多个项目中重复出现的问题、风险或维护需求。",
         "",
-        "## 6. this weekrecommendations items",
-        "providethis weekrecommended to prioritize anditems. ",
+        "## 6. 本周建议关注事项",
+        "给出本周建议优先关注的项目和事项。",
         "",
-        " :",
-        "1. only answer based on records, do not fabricate information. ",
-        "2. do not output reasoning process. ",
-        "3. not  <think> tags. ",
-        "4. if insufficient records, please state insufficient records. ",
+        "额外要求：",
+        "1. 只根据资料回答，不要编造。",
+        "2. 不要输出思考过程。",
+        "3. 不要输出 <think> 标签。",
+        "4. 如果资料不足，请明确说明资料不足。",
     ]
 
     prompt = "\n".join(prompt_lines)
@@ -457,7 +442,7 @@ def save_multi_project_status(
     doc_types: list[str],
 ) -> Path:
     """
-    savemulti-project status summaryas Markdown. 
+    保存多项目状态汇总为 Markdown。
     """
     MULTI_PROJECT_STATUS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -474,12 +459,12 @@ def save_multi_project_status(
     lines = []
 
     lines.append("---")
-    lines.append(f"title: multi-project status summary {timestamp}")
+    lines.append(f"title: 多项目状态汇总 {timestamp}")
     lines.append(f"created: {now.isoformat(timespec='seconds')}")
     lines.append("category: summary")
     lines.append("project: Personal_Project_Assistant")
     lines.append("doc_type: multi_project_status")
-    lines.append("tags: [multi-project , M2.3, auto generated, personal secretary]")
+    lines.append("tags: [多项目汇总, M2.3, 自动生成, 个人秘书]")
     lines.append(f"projects: {project_text}")
     lines.append(f"source_doc_types: {doc_type_text}")
     lines.append("---")
@@ -488,11 +473,11 @@ def save_multi_project_status(
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("##  multi-project knowledge basesource")
+    lines.append("## 本多项目汇总使用的知识库来源")
     lines.append("")
 
     if not sources:
-        lines.append("No source recorded. ")
+        lines.append("未记录来源。")
     else:
         for source in sources:
             lines.append(f"- {source}")
@@ -505,62 +490,62 @@ def save_multi_project_status(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Personal Project Secretary + Knowledge Base:multi-project status summary"
+        description="个人项目秘书 + 数据知识库：多项目状态汇总"
     )
 
     parser.add_argument(
         "--project",
         action="append",
         default=None,
-        help="specified . canduplicate ,  can . notspecified all . ",
+        help="指定要汇总的项目。可重复使用，也可逗号分隔。不指定则汇总所有项目。",
     )
 
     parser.add_argument(
         "--exclude-project",
         action="append",
         default=None,
-        help=" specified . canduplicate ,  can . ",
+        help="排除指定项目。可重复使用，也可逗号分隔。",
     )
 
     parser.add_argument(
         "--doc-type",
         action="append",
         default=None,
-        help="specified and document type. canduplicate ,  can . ",
+        help="指定参与分析的文档类型。可重复使用，也可逗号分隔。",
     )
 
     parser.add_argument(
         "--max-projects",
         type=int,
         default=12,
-        help=" . ",
+        help="最多汇总多少个项目。",
     )
 
     parser.add_argument(
         "--max-items-per-project",
         type=int,
         default=18,
-        help="each read chunk. ",
+        help="每个项目最多读取多少个片段。",
     )
 
     parser.add_argument(
         "--max-chars-per-project",
         type=int,
         default=10000,
-        help="each model. ",
+        help="每个项目最多提供多少字符给模型。",
     )
 
     parser.add_argument(
         "--max-points",
         type=int,
         default=800,
-        help="from Qdrant  candidate chunk. ",
+        help="从 Qdrant 最多扫描多少个候选片段。",
     )
 
     parser.add_argument(
         "--no-save",
         action="store_true",
-        help="onlyin , notsave Markdown file. ",
+        help="只在终端输出，不保存 Markdown 文件。",
     )
 
     args = parser.parse_args()
@@ -569,13 +554,13 @@ def main():
     exclude_projects = parse_csv_values(args.exclude_project)
     doc_types = parse_doc_types(args.doc_type)
 
-    print("Personal Project Secretary + Knowledge Base:multi-project status summary")
-    print(f"specified :{include_projects if include_projects else ' '}")
-    print(f" :{exclude_projects if exclude_projects else 'no'}")
-    print(f"goaldocument type:{doc_types}")
-    print(f" multi-project :{args.max_projects}")
-    print(f" chunk :{args.max_items_per_project}")
-    print(f" :{args.max_chars_per_project}")
+    print("个人项目秘书 + 数据知识库：多项目状态汇总")
+    print(f"指定项目：{include_projects if include_projects else '全部'}")
+    print(f"排除项目：{exclude_projects if exclude_projects else '无'}")
+    print(f"目标文档类型：{doc_types}")
+    print(f"最多项目数：{args.max_projects}")
+    print(f"每项目最大片段数：{args.max_items_per_project}")
+    print(f"每项目最大字符数：{args.max_chars_per_project}")
 
     grouped = load_all_project_contexts(
         include_projects=include_projects,
@@ -592,24 +577,24 @@ def main():
     )
 
     print("")
-    print(f"loaded record count:{len(trimmed)}")
+    print(f"读取到项目数量：{len(trimmed)}")
 
     build_project_overview_for_terminal(trimmed)
 
     print("")
-    print("running multi-project status summary...")
+    print("正在生成多项目状态汇总...")
 
     report = generate_multi_project_status(trimmed)
 
     print("")
     print("=" * 80)
-    print("multi-project status summary")
+    print("多项目状态汇总")
     print("=" * 80)
     print(report)
 
     if args.no_save:
         print("")
-        print("already  --no-save,  save Markdown file. ")
+        print("已选择 --no-save，未保存 Markdown 文件。")
         return
 
     file_path = save_multi_project_status(
@@ -619,14 +604,14 @@ def main():
     )
 
     print("")
-    print("multi-project status summaryalreadysave:")
+    print("多项目状态汇总已保存：")
     print(file_path)
     print("")
-    print("recommended next command:")
+    print("建议下一步执行：")
     print("python update_index.py")
     print(
         'python ask.py --doc-type multi_project_status '
-        '" project status ？"'
+        '"当前多个项目状态如何？"'
     )
 
 

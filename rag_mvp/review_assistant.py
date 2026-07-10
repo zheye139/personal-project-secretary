@@ -1,5 +1,4 @@
 import argparse
-import os
 import re
 import requests
 import sys
@@ -11,16 +10,17 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 import config
+import vector_store_config
 
 
 # ============================================================
-# base configuration
+# 基础配置
 # ============================================================
 
 OLLAMA_URL = config.OLLAMA_URL
 CHAT_MODEL = config.CHAT_MODEL
-QDRANT_URL = config.QDRANT_URL
-COLLECTION_NAME = config.COLLECTION_NAME
+QDRANT_URL = vector_store_config.get_qdrant_url()
+COLLECTION_NAME = vector_store_config.get_collection_name()
 KNOWLEDGE_ROOT = config.KNOWLEDGE_ROOT
 
 REVIEW_REPORT_DIR = getattr(
@@ -31,7 +31,7 @@ REVIEW_REPORT_DIR = getattr(
 
 
 # ============================================================
-# Windows / PowerShell English output 
+# Windows / PowerShell 中文输出处理
 # ============================================================
 
 try:
@@ -42,21 +42,10 @@ except Exception:
 
 
 # ============================================================
-# Prevent local service requests from going through system proxies.
+# 避免访问本机服务时走系统代理
 # ============================================================
 
-for key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-]:
-    os.environ.pop(key, None)
-
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+vector_store_config.configure_qdrant_environment()
 
 
 DEFAULT_DOC_TYPES = [
@@ -78,7 +67,7 @@ DEFAULT_DOC_TYPES = [
 
 def clean_model_response(text: str) -> str:
     """
-    cleanup qwen3 cancan  <think>...</think> content. 
+    清理 qwen3 可能输出的 <think>...</think> 内容。
     """
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     return text.strip()
@@ -86,18 +75,14 @@ def clean_model_response(text: str) -> str:
 
 def get_qdrant_client() -> QdrantClient:
     """
-    create Qdrant  . 
+    创建 Qdrant 客户端。
     """
-    return QdrantClient(
-        url=QDRANT_URL,
-        check_compatibility=False,
-        timeout=60,
-    )
+    return vector_store_config.get_qdrant_client(timeout=60)
 
 
 def build_project_filter(project: str):
     """
-    Qdrant   project filter. 
+    Qdrant 层按 project 过滤。
     """
     return Filter(
         must=[
@@ -111,7 +96,7 @@ def build_project_filter(project: str):
 
 def parse_csv_values(raw_values: list[str] | None) -> list[str]:
     """
-    parsecanduplicate, can command . 
+    解析可重复、可逗号分隔的命令行参数。
     """
     if not raw_values:
         return []
@@ -127,7 +112,7 @@ def parse_csv_values(raw_values: list[str] | None) -> list[str]:
 
 def parse_doc_types(raw_doc_types: list[str] | None) -> list[str]:
     """
-    parse and  doc_type. 
+    解析参与复盘的 doc_type。
     """
     parsed = parse_csv_values(raw_doc_types)
 
@@ -139,7 +124,7 @@ def parse_doc_types(raw_doc_types: list[str] | None) -> list[str]:
 
 def safe_text_preview(text: str, max_chars: int = 180) -> str:
     """
-     preview . 
+    生成终端预览文本。
     """
     text = text.replace("\n", " ").strip()
 
@@ -156,16 +141,16 @@ def load_project_contexts(
     max_chars: int = 30000,
 ) -> list[dict]:
     """
-    from Qdrant inreadspecifiedproject records. 
+    从 Qdrant 中读取指定项目资料。
 
-    review_assistant.py  'recordscomplete and risks', 
-    so read project records. 
+    review_assistant.py 关注“资料完整性和风险”，
+    所以会读取较多类型的项目资料。
     """
     client = get_qdrant_client()
 
     if not client.collection_exists(COLLECTION_NAME):
         raise RuntimeError(
-            f"collection does not exist:{COLLECTION_NAME}, please first  python update_index.py"
+            f"集合不存在：{COLLECTION_NAME}，请先运行 python update_index.py"
         )
 
     scroll_filter = build_project_filter(project)
@@ -244,7 +229,7 @@ def load_project_contexts(
 
 def summarize_doc_type_counts(contexts: list[dict]) -> dict[str, int]:
     """
-    statistics  doc_type. 
+    统计当前项目包含哪些 doc_type。
     """
     counts = defaultdict(int)
 
@@ -256,7 +241,7 @@ def summarize_doc_type_counts(contexts: list[dict]) -> dict[str, int]:
 
 def get_latest_updated_at(contexts: list[dict]) -> str:
     """
-     recordsinrecentupdated at. 
+    获取资料中的最近更新时间。
     """
     latest = ""
 
@@ -270,12 +255,12 @@ def get_latest_updated_at(contexts: list[dict]) -> str:
 
 def local_rule_review(project: str, contexts: list[dict]) -> list[str]:
     """
-    not modelbasicrulescheck. 
+    不依赖模型的基础规则检查。
 
-     :
-    1. checkwhethermissing document type. 
-    2. checkwhetherlong-term has next_steps. 
-    3. checkwhether has issue recordordecision record. 
+    作用：
+    1. 检查是否缺少关键文档类型。
+    2. 检查是否长期没有 next_steps。
+    3. 检查是否没有问题记录或决策记录。
     """
     issues = []
     counts = summarize_doc_type_counts(contexts)
@@ -290,47 +275,47 @@ def local_rule_review(project: str, contexts: list[dict]) -> list[str]:
 
     for doc_type in required_doc_types:
         if counts.get(doc_type, 0) == 0:
-            issues.append(f"cancanmissing document type:{doc_type}")
+            issues.append(f"可能缺少关键文档类型：{doc_type}")
 
     if counts.get("project_brief", 0) == 0:
-        issues.append(" not found project_brief, recommendationsfirst project brief. ")
+        issues.append("尚未发现 project_brief，建议先生成项目简报。")
 
     if counts.get("next_action_report", 0) == 0:
-        issues.append(" not found next_action_report, recommendationsfirst next action list. ")
+        issues.append("尚未发现 next_action_report，建议先生成下一步行动清单。")
 
     if counts.get("weekly_report", 0) == 0:
-        issues.append(" not found weekly_report, recommendationsregularly weekly report. ")
+        issues.append("尚未发现 weekly_report，建议定期生成周报。")
 
     if counts.get("issues", 0) == 0 and counts.get("issue", 0) == 0:
-        issues.append("not found issue record, cancannot later . ")
+        issues.append("未发现明确问题记录，可能不利于后续复盘。")
 
     if counts.get("decisions", 0) == 0 and counts.get("decision", 0) == 0:
-        issues.append("not found decision record, recommendationsrecord reason. ")
+        issues.append("未发现明确决策记录，建议记录关键技术选择原因。")
 
     if not contexts:
-        issues.append(f"  {project} Loaded records are available. ")
+        issues.append(f"项目 {project} 没有读取到可复盘资料。")
 
     return issues
 
 
 def build_context_text(contexts: list[dict]) -> str:
     """
-    project records modelcan . 
+    将项目资料整理成模型可读上下文。
     """
     lines = []
 
     for index, ctx in enumerate(contexts, start=1):
-        lines.append(f"## records {index}")
+        lines.append(f"## 资料 {index}")
         lines.append("")
-        lines.append(f"- record category:{ctx.get('category', '')}")
-        lines.append(f"-  :{ctx.get('project', '')}")
-        lines.append(f"- document type:{ctx.get('doc_type', '')}")
-        lines.append(f"- title:{ctx.get('title', '')}")
-        lines.append(f"- tags:{ctx.get('tags', [])}")
-        lines.append(f"- file:{ctx.get('file_name', '')}")
-        lines.append(f"- source:{ctx.get('source', '')}")
-        lines.append(f"- chunk:{ctx.get('chunk_index', '')}")
-        lines.append(f"- updated at:{ctx.get('updated_at', '')}")
+        lines.append(f"- 资料大类：{ctx.get('category', '')}")
+        lines.append(f"- 项目：{ctx.get('project', '')}")
+        lines.append(f"- 文档类型：{ctx.get('doc_type', '')}")
+        lines.append(f"- 标题：{ctx.get('title', '')}")
+        lines.append(f"- 标签：{ctx.get('tags', [])}")
+        lines.append(f"- 文件：{ctx.get('file_name', '')}")
+        lines.append(f"- 来源：{ctx.get('source', '')}")
+        lines.append(f"- 片段：{ctx.get('chunk_index', '')}")
+        lines.append(f"- 更新时间：{ctx.get('updated_at', '')}")
         lines.append("")
         lines.append(ctx.get("text", ""))
         lines.append("")
@@ -340,7 +325,7 @@ def build_context_text(contexts: list[dict]) -> str:
 
 def build_source_summary(contexts: list[dict]) -> list[str]:
     """
-     source list. 
+    生成来源清单。
     """
     sources = []
 
@@ -359,28 +344,28 @@ def build_source_summary(contexts: list[dict]) -> list[str]:
 
 def build_local_review_text(project: str, contexts: list[dict]) -> str:
     """
-     rulescheck results as Markdown. 
+    将本地规则检查结果整理为 Markdown。
     """
     counts = summarize_doc_type_counts(contexts)
     local_issues = local_rule_review(project, contexts)
     latest = get_latest_updated_at(contexts)
 
     lines = []
-    lines.append("##  rulescheck ")
+    lines.append("## 本地规则检查摘要")
     lines.append("")
-    lines.append(f"-  :{project}")
-    lines.append(f"- candidate chunk count:{len(contexts)}")
-    lines.append(f"- recentupdated at:{latest if latest else ' '}")
-    lines.append(f"- document type statistics:{counts}")
+    lines.append(f"- 项目：{project}")
+    lines.append(f"- 候选片段数量：{len(contexts)}")
+    lines.append(f"- 最近更新时间：{latest if latest else '未知'}")
+    lines.append(f"- 文档类型统计：{counts}")
     lines.append("")
 
     if local_issues:
-        lines.append("### rulesfoundissue")
+        lines.append("### 规则发现的问题")
         lines.append("")
         for issue in local_issues:
             lines.append(f"- {issue}")
     else:
-        lines.append("not found rulesissue. ")
+        lines.append("未发现明显规则问题。")
 
     lines.append("")
 
@@ -393,24 +378,24 @@ def generate_review_report(
     local_review: str,
 ) -> str:
     """
-    call qwen3:8b  project records report. 
+    调用 qwen3:8b 生成项目记录复盘报告。
     """
     if not contexts:
         lines = [
-            f"# {project} project records report",
+            f"# {project} 项目记录复盘报告",
             "",
-            "Loaded project records are available for analysis. ",
+            "当前没有读取到可用于复盘的项目资料。",
             "",
             local_review,
             "",
-            "recommendations:",
+            "建议：",
             "",
-            "1.   project_overview.md. ",
-            "2.   progress_log.md. ",
-            "3.   issues.md. ",
-            "4.   decisions.md. ",
-            "5.   next_steps.md. ",
-            "6. execute python update_index.py  re- script. ",
+            "1. 补充 project_overview.md。",
+            "2. 补充 progress_log.md。",
+            "3. 补充 issues.md。",
+            "4. 补充 decisions.md。",
+            "5. 补充 next_steps.md。",
+            "6. 执行 python update_index.py 后重新运行本脚本。",
             "",
         ]
         return "\n".join(lines)
@@ -418,63 +403,63 @@ def generate_review_report(
     context_text = build_context_text(contexts)
 
     prompt_lines = [
-        " is Personal Project Secretaryand . ",
+        "你是我的个人项目秘书和项目复盘助手。",
         "",
-        "please project recordsand rulescheck results, forproject records . ",
+        "请根据下面的项目资料和本地规则检查结果，对项目记录进行复盘。",
         "",
-        " notisre-summary , insteadcheck:",
-        "1. recordwhether complete. ",
-        "2. whetherexists . ",
-        "3. whetherexistsrisks. ",
-        "4. whetherhas issue record missingresolve . ",
-        "5. whetherhas record missingnext steps. ",
-        "6. whetherhas decision missing . ",
-        "7. whether document. ",
+        "复盘重点不是重新总结项目，而是检查：",
+        "1. 记录是否完整。",
+        "2. 是否存在遗漏。",
+        "3. 是否存在风险。",
+        "4. 是否有问题记录但缺少解决方案。",
+        "5. 是否有进度记录但缺少下一步。",
+        "6. 是否有技术决策但缺少理由。",
+        "7. 是否需要补充文档。",
         "",
-        "[project name]",
+        "【项目名称】",
         project,
         "",
-        "[ rulescheck results]",
+        "【本地规则检查结果】",
         local_review,
         "",
-        "[project records]",
+        "【项目资料】",
         context_text,
         "",
-        "[ ]",
-        "Use English Markdown output. ",
+        "【输出要求】",
+        "请使用中文 Markdown 输出。",
         "",
-        f"# {project} project records report",
+        f"# {project} 项目记录复盘报告",
         "",
-        "## 1.  ",
-        "  3 to 6  describe project records whether complete,  issueis . ",
+        "## 1. 复盘结论",
+        "用 3 到 6 条说明项目记录当前是否完整、主要问题是什么。",
         "",
-        "## 2. recordcomplete check",
-        "check project overview,  , issue, decision, next steps, report,  whether . ",
+        "## 2. 记录完整性检查",
+        "检查项目概述、进度、问题、决策、下一步、报告、行动清单是否齐全。",
         "",
-        "## 3. found ",
-        "list project recordsin or content. ",
+        "## 3. 发现的遗漏",
+        "列出当前项目资料中明显缺失或需要补充的内容。",
         "",
-        "## 4. risks and hidden issues",
-        "identifycancan , maintenance,  ,  risks. ",
+        "## 4. 风险与隐患",
+        "指出可能影响项目推进、维护、迁移、复盘的风险。",
         "",
-        "## 5. recommended records to add",
-        "please ,  :",
+        "## 5. 建议补充的记录",
+        "请用表格输出，列包含：",
         "",
-        "|   | recommended additionscontent | reason | recommendationssave /document type | priority |",
+        "| 编号 | 建议补充内容 | 原因 | 建议保存位置/文档类型 | 优先级 |",
         "| --- | --- | --- | --- | --- |",
         "",
-        "## 6. recommendationsimmediate issue",
-        "list this recordissue. ",
+        "## 6. 建议立即修正的问题",
+        "列出最应该马上处理的记录问题。",
         "",
-        "## 7. later recommendations",
-        "description this maintenancethis project records. ",
+        "## 7. 后续复盘建议",
+        "说明以后应该如何持续维护这个项目记录。",
         "",
-        " :",
-        "1. only answer based on records, do not fabricate information. ",
-        "2. if insufficient records, please 'insufficient records, no '. ",
-        "3. do not output reasoning process. ",
-        "4. not  <think> tags. ",
-        "5. recommendations , not empty . ",
+        "额外要求：",
+        "1. 只根据资料回答，不要编造。",
+        "2. 如果资料不足，请明确写“资料不足，无法确认”。",
+        "3. 不要输出思考过程。",
+        "4. 不要输出 <think> 标签。",
+        "5. 建议要具体，不要空泛。",
     ]
 
     prompt = "\n".join(prompt_lines)
@@ -502,7 +487,7 @@ def save_review_report(
     local_review: str,
 ) -> Path:
     """
-    save reportas Markdown. 
+    保存项目复盘报告为 Markdown。
     """
     REVIEW_REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -517,12 +502,12 @@ def save_review_report(
     lines = []
 
     lines.append("---")
-    lines.append(f"title: {project} project records report {timestamp}")
+    lines.append(f"title: {project} 项目记录复盘报告 {timestamp}")
     lines.append(f"created: {now.isoformat(timespec='seconds')}")
     lines.append("category: summary")
     lines.append(f"project: {project}")
     lines.append("doc_type: review_report")
-    lines.append("tags: [ , M2.5, auto generated, personal secretary]")
+    lines.append("tags: [项目复盘, M2.5, 自动生成, 个人秘书]")
     lines.append(f"source_doc_types: {doc_type_text}")
     lines.append("---")
     lines.append("")
@@ -534,11 +519,11 @@ def save_review_report(
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("##  report knowledge basesource")
+    lines.append("## 本复盘报告使用的知识库来源")
     lines.append("")
 
     if not sources:
-        lines.append("No source recorded. ")
+        lines.append("未记录来源。")
     else:
         for source in sources:
             lines.append(f"- {source}")
@@ -550,13 +535,13 @@ def save_review_report(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Personal Project Secretary + Knowledge Base:project records "
+        description="个人项目秘书 + 数据知识库：项目记录复盘助手"
     )
 
     parser.add_argument(
         "--project",
         required=True,
-        help="project name, for example Personal_Project_Assistant",
+        help="项目名称，例如 Personal_Project_Assistant",
     )
 
     parser.add_argument(
@@ -564,8 +549,8 @@ def main():
         action="append",
         default=None,
         help=(
-            "specified and document type. "
-            "canduplicate ,  can . "
+            "指定参与复盘的文档类型。"
+            "可重复使用，也可逗号分隔。"
         ),
     )
 
@@ -573,31 +558,31 @@ def main():
         "--max-points",
         type=int,
         default=180,
-        help=" read chunk. ",
+        help="最多读取多少个向量片段。",
     )
 
     parser.add_argument(
         "--max-chars",
         type=int,
         default=30000,
-        help=" model. ",
+        help="最多提供多少字符给模型。",
     )
 
     parser.add_argument(
         "--no-save",
         action="store_true",
-        help="onlyin , notsave Markdown file. ",
+        help="只在终端输出，不保存 Markdown 文件。",
     )
 
     args = parser.parse_args()
 
     doc_types = parse_doc_types(args.doc_type)
 
-    print("Personal Project Secretary + Knowledge Base:project records ")
-    print(f" :{args.project}")
-    print(f"goaldocument type:{doc_types}")
-    print(f" chunk :{args.max_points}")
-    print(f" :{args.max_chars}")
+    print("个人项目秘书 + 数据知识库：项目记录复盘助手")
+    print(f"项目：{args.project}")
+    print(f"目标文档类型：{doc_types}")
+    print(f"最大片段数：{args.max_points}")
+    print(f"最大字符数：{args.max_chars}")
 
     contexts = load_project_contexts(
         project=args.project,
@@ -606,11 +591,11 @@ def main():
         max_chars=args.max_chars,
     )
 
-    print(f"candidate record chunk count:{len(contexts)}")
+    print(f"读取到候选资料片段数量：{len(contexts)}")
 
     if contexts:
         print("")
-        print("candidaterecordspreview:")
+        print("候选资料预览：")
 
         for index, ctx in enumerate(contexts[:8], start=1):
             print(
@@ -619,8 +604,8 @@ def main():
                 f"{ctx.get('file_name', '')} | "
                 f"{ctx.get('updated_at', '')}"
             )
-            print(f"   source:{ctx.get('source', '')}")
-            print(f"   content:{safe_text_preview(ctx.get('text', ''), 120)}")
+            print(f"   来源：{ctx.get('source', '')}")
+            print(f"   内容：{safe_text_preview(ctx.get('text', ''), 120)}")
 
     local_review = build_local_review_text(
         project=args.project,
@@ -629,12 +614,12 @@ def main():
 
     print("")
     print("=" * 80)
-    print(" rulescheck ")
+    print("本地规则检查摘要")
     print("=" * 80)
     print(local_review)
 
     print("")
-    print("running project records report...")
+    print("正在生成项目记录复盘报告...")
 
     report = generate_review_report(
         project=args.project,
@@ -644,13 +629,13 @@ def main():
 
     print("")
     print("=" * 80)
-    print("project records report")
+    print("项目记录复盘报告")
     print("=" * 80)
     print(report)
 
     if args.no_save:
         print("")
-        print("already  --no-save,  save Markdown file. ")
+        print("已选择 --no-save，未保存 Markdown 文件。")
         return
 
     file_path = save_review_report(
@@ -662,14 +647,14 @@ def main():
     )
 
     print("")
-    print("project records reportalreadysave:")
+    print("项目记录复盘报告已保存：")
     print(file_path)
     print("")
-    print("recommended next command:")
+    print("建议下一步执行：")
     print("python update_index.py")
     print(
         'python ask.py --doc-type review_report '
-        '" project recordshas and risks？"'
+        '"当前项目记录有哪些遗漏和风险？"'
     )
 
 

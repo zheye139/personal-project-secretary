@@ -12,14 +12,14 @@ ARCHIVE_ROOT = KNOWLEDGE_ROOT / "01_Projects_Archived"
 
 def project_path(project: str) -> Path:
     """
-    Get the current project path.
+    获取项目当前路径。
     """
     return PROJECT_ROOT / project
 
 
 def archive_path(project: str) -> Path:
     """
-    Build a timestamped archive path to avoid overwriting existing archives.
+    生成带时间戳的归档路径，避免覆盖历史归档。
     """
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return ARCHIVE_ROOT / f"{timestamp}_{project}"
@@ -27,7 +27,7 @@ def archive_path(project: str) -> Path:
 
 def count_files(path: Path) -> int:
     """
-    Count files in a directory.
+    统计目录中的文件数量。
     """
     if not path.exists():
         return 0
@@ -37,53 +37,53 @@ def count_files(path: Path) -> int:
 
 def write_archive_note(target_dir: Path, project: str, source_dir: Path) -> None:
     """
-    Write ARCHIVED.md in the archived project directory.
+    在归档目录中写入 ARCHIVED.md，记录归档信息。
     """
     note_path = target_dir / "ARCHIVED.md"
     now = datetime.now().isoformat(timespec="seconds")
 
     content = f"""---
-title: {project} Project Archive Records
+title: {project} 项目归档记录
 created: {now}
 category: project
 project: {project}
 doc_type: archived_project
-tags: [Project Archive, archive, M1.24]
+tags: [项目归档, archive, M1.24]
 ---
 
-# {project} Project Archive Records
+# {project} 项目归档记录
 
-## Archive time
+## 归档时间
 
 {now}
 
-## Reason for archiving
+## 归档原因
 
-Please add the reason for archiving here.
+请在这里补充归档原因。
 
-## Archiving Instructions
+## 归档说明
 
-The project has been completed from:
+该项目已从：
 
 ```text
 {source_dir}
 ```
 
-Move to:
+移动到：
 
 ```text
 {target_dir}
 ```
 
-## Follow-up processing
+## 后续处理
 
-To restore, the directory can be moved back:
+如需恢复，可将该目录重新移动回：
 
 ```text
 {source_dir}
 ```
 
-Recommended actions after recovery:
+恢复后建议执行：
 
 ```powershell
 python update_index.py
@@ -96,44 +96,44 @@ python status.py
 
 def archive_project(project: str, execute: bool = False) -> None:
     """
-    Archive the specified project directory.
+    归档指定项目目录。
 
-    Preview by default and do not move files.
-    Move the directory only when --execute is provided.
+    默认只预览，不移动文件。
+    使用 --execute 后才会真正移动目录。
     """
     src = project_path(project)
 
     if not src.exists():
-        print(f"[error] Project does not exist:{src}")
+        print(f"[错误] 项目不存在：{src}")
         return
 
     if not src.is_dir():
-        print(f"[error] The target is not a directory:{src}")
+        print(f"[错误] 目标不是目录：{src}")
         return
 
     dst = archive_path(project)
     file_count = count_files(src)
 
-    print("Personal Project Secretary + Data Knowledge Base: Project Archiving Tool")
+    print("个人项目秘书 + 数据知识库：项目归档工具")
     print("")
-    print(f"Project Name:{project}")
-    print(f"Source directory:{src}")
-    print(f"Target Archive Directory:{dst}")
-    print(f"Number of files:{file_count}")
-    print(f"Perform archiving:{execute}")
+    print(f"项目名称：{project}")
+    print(f"源目录：{src}")
+    print(f"目标归档目录：{dst}")
+    print(f"文件数量：{file_count}")
+    print(f"执行归档：{execute}")
 
     if not execute:
         print("")
-        print("Currently in preview mode, no files have been moved.")
-        print("Execute after confirming that everything is correct:")
+        print("当前为预览模式，未移动任何文件。")
+        print("确认无误后执行：")
         print(f"python archive_project.py --project {project} --execute")
         return
 
     ARCHIVE_ROOT.mkdir(parents=True, exist_ok=True)
 
     if dst.exists():
-        print(f"[error] The target archive directory already exists: {dst}")
-        print("Please try again later, or check the archive directory manually.")
+        print(f"[错误] 目标归档目录已存在：{dst}")
+        print("请稍后重试，或手动检查归档目录。")
         return
 
     shutil.move(str(src), str(dst))
@@ -144,31 +144,31 @@ def archive_project(project: str, execute: bool = False) -> None:
     )
 
     print("")
-    print("The project has been archived:")
+    print("项目已归档：")
     print(dst)
     print("")
-    print("Recommended next steps:")
+    print("建议下一步执行：")
     print("python update_index.py")
     print("")
-    print("illustrate:")
-    print("If the project is a test project and you do not want the archived content to be stored in the repository, you can prevent 01_Projects_Archived from being collected by ingest.py.")
+    print("说明：")
+    print("如果该项目是测试项目，并且不希望归档内容入库，可以保持 01_Projects_Archived 不被 ingest.py 收集。")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Personal Project Secretary + Data Knowledge Base: Securely Archived Project Catalog"
+        description="个人项目秘书 + 数据知识库：安全归档项目目录"
     )
 
     parser.add_argument(
         "--project",
         required=True,
-        help="The name of the project directory to be archived, for example Test_Project",
+        help="要归档的项目目录名，例如 Test_Project",
     )
 
     parser.add_argument(
         "--execute",
         action="store_true",
-        help="Performs actual archiving. By default, it only previews and does not move files.",
+        help="真正执行归档。默认只预览，不移动文件。",
     )
 
     args = parser.parse_args()

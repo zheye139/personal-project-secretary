@@ -63,11 +63,11 @@ def should_skip(path: Path) -> bool:
 
 def is_project_related_markdown(path: Path, project: str) -> bool:
     """
-    determinea Markdown whether specified . 
+    判断一个 Markdown 是否属于指定项目。
 
-    determinerules:
-    1. 01_Projects/project directory file this . 
-    2. Frontmatter in project etc. goal project file this . 
+    判断规则：
+    1. 01_Projects/project 目录下的文件属于该项目。
+    2. Frontmatter 中 project 等于目标 project 的文件属于该项目。
     """
     if should_skip(path):
         return False
@@ -105,7 +105,7 @@ def collect_project_files(project: str, include_summaries: bool = True) -> list[
         if path.suffix.lower() != ".md":
             continue
 
-        # defaultexport , issue, decision, summaryetc.all Frontmatter project   Markdown
+        # 默认导出项目本体、问题、决策、总结等所有 Frontmatter project 匹配的 Markdown
         if is_project_related_markdown(path, project):
             if not include_summaries:
                 rel_parts = path.relative_to(KNOWLEDGE_ROOT).parts
@@ -118,7 +118,7 @@ def collect_project_files(project: str, include_summaries: bool = True) -> list[
 
 def run_list_docs_snapshot(project: str, output_path: Path) -> None:
     """
-    save  list_docs.py  , asexport package . 
+    保存当前 list_docs.py 输出，作为导出包快照。
     """
     base_dir = Path(__file__).parent.resolve()
     python_exe = sys.executable
@@ -136,17 +136,17 @@ def run_list_docs_snapshot(project: str, output_path: Path) -> None:
 
     lines = [
         "---",
-        f"title: {project} Exporting a snapshot of the imported document",
+        f"title: {project} 导出时入库文档快照",
         f"created: {now}",
         "category: summary",
         f"project: {project}",
         "doc_type: export_snapshot",
-        "tags: [Project Export, list_docs, Automatically generated]",
+        "tags: [项目导出, list_docs, 自动生成]",
         "---",
         "",
-        f"# {project} Exporting a snapshot of the imported document",
+        f"# {project} 导出时入库文档快照",
         "",
-        f"Generation time:{now}",
+        f"生成时间：{now}",
         "",
         "```text",
         result.stdout,
@@ -176,20 +176,20 @@ def create_manifest(project: str, files: list[Path], output_path: Path) -> None:
 
     lines = [
         "---",
-        f"title: {project} Project Export List",
+        f"title: {project} 项目导出清单",
         f"created: {now}",
         "category: summary",
         f"project: {project}",
         "doc_type: export_manifest",
-        "tags: [Project Export, manifest, Automatically generated]",
+        "tags: [项目导出, manifest, 自动生成]",
         "---",
         "",
-        f"# {project} Project Export List",
+        f"# {project} 项目导出清单",
         "",
-        f"Export time:{now}",
-        f"Number of files:{len(files)}",
+        f"导出时间：{now}",
+        f"文件数量：{len(files)}",
         "",
-        "## File List",
+        "## 文件列表",
         "",
     ]
 
@@ -217,23 +217,23 @@ def export_project(project: str, include_summaries: bool = True) -> None:
     project_dir = PROJECTS_DIR / project
 
     if not project_dir.exists():
-        print(f"[WARNING] The project's main directory does not exist:{project_dir}")
-        print("We will still attempt to export the relevant files based on the Frontmatter project field.")
+        print(f"[警告] 项目主目录不存在：{project_dir}")
+        print("仍会尝试根据 Frontmatter project 字段导出相关文件。")
 
     files = collect_project_files(
         project=project,
         include_summaries=include_summaries,
     )
 
-    print("Personal Project Secretary + Data Knowledge Base: Project Export Tool")
+    print("个人项目秘书 + 数据知识库：项目导出工具")
     print("")
-    print(f"Project Name:{project}")
-    print(f"Project main directory:{project_dir}")
-    print(f"Number of exported files:{len(files)}")
+    print(f"项目名称：{project}")
+    print(f"项目主目录：{project_dir}")
+    print(f"导出文件数量：{len(files)}")
 
     if not files:
         print("")
-        print("No exportable project file found.")
+        print("未找到可导出的项目文件。")
         return
 
     PROJECT_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -259,34 +259,34 @@ def export_project(project: str, include_summaries: bool = True) -> None:
     )
 
     print("")
-    print("Project export complete:")
+    print("项目导出完成：")
     print(export_zip_path)
     print("")
-    print("The exported package includes:")
-    print("1. Project-related Markdown files")
+    print("导出包中包含：")
+    print("1. 项目相关 Markdown 文件")
     print("2. _export_metadata/export_manifest.md")
     print("3. _export_metadata/list_docs_snapshot.md")
     print("")
-    print("Recommended next steps:")
-    print("1. Open the zip file and check its contents.")
-    print("2. If everything is correct, you can run `python backup_kb.py` to perform a full database backup.")
+    print("建议下一步：")
+    print("1. 打开 zip 检查内容。")
+    print("2. 如果确认无误，可以执行 python backup_kb.py 做全库备份。")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Personal Project Secretary + Data Knowledge Base: Export data packages by project"
+        description="个人项目秘书 + 数据知识库：按项目导出资料包"
     )
 
     parser.add_argument(
         "--project",
         required=True,
-        help="The project name to be exported, for example, Demo_Project",
+        help="要导出的项目名，例如 Personal_Project_Assistant",
     )
 
     parser.add_argument(
         "--no-summaries",
         action="store_true",
-        help="Do not export project reports, Q&A records, daily and weekly reports, and other summary files under 05_Summaries.",
+        help="不导出 05_Summaries 下的项目报告、问答记录、日报周报等总结文件。",
     )
 
     args = parser.parse_args()

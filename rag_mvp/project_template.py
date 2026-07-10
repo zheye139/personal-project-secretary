@@ -66,28 +66,28 @@ def write_file(path: Path, content: str, overwrite: bool = False) -> bool:
 
 def build_readme(project: str) -> str:
     return build_markdown(
-        title=f"{project}   README",
+        title=f"{project} 项目 README",
         project=project,
         doc_type="readme",
-        tags=[" description", "README"],
+        tags=["项目说明", "README"],
         body_lines=[
             f"# {project}",
             "",
-            "## 1.  ",
+            "## 1. 项目简介",
             "",
-            "pleaseinthisin purpose . ",
+            "请在这里填写项目的基本介绍。",
             "",
-            "## 2.  goal",
+            "## 2. 项目目标",
             "",
             "1. ",
             "2. ",
             "3. ",
             "",
-            "## 3.  stage",
+            "## 3. 当前阶段",
             "",
-            " stage: . ",
+            "当前阶段：待填写。",
             "",
-            "## 4.  directory",
+            "## 4. 主要目录",
             "",
             "```text",
             project,
@@ -101,9 +101,9 @@ def build_readme(project: str) -> str:
             "└─ notes",
             "```",
             "",
-            "## 5.  description",
+            "## 5. 使用说明",
             "",
-            " project records Personal Project Secretary + Knowledge Base read, andpassed RAG retrievalquestion answering. ",
+            "本项目资料会被个人项目秘书 + 数据知识库系统读取，并通过 RAG 检索问答。",
             "",
         ],
     )
@@ -111,42 +111,42 @@ def build_readme(project: str) -> str:
 
 def build_project_overview(project: str) -> str:
     return build_markdown(
-        title=f"{project} project overview",
+        title=f"{project} 项目概述",
         project=project,
         doc_type="project_overview",
-        tags=["project overview"],
+        tags=["项目概述"],
         body_lines=[
-            f"# {project} project overview",
+            f"# {project} 项目概述",
             "",
-            "## 1.  ",
+            "## 1. 项目定位",
             "",
-            "pleasedescriptionthis is ,  resolve issue. ",
+            "请说明这个项目是什么，用来解决什么问题。",
             "",
-            "## 2.  ",
+            "## 2. 项目背景",
             "",
-            "pleaserecord reason,  ,  source. ",
+            "请记录项目产生的原因、使用场景、需求来源。",
             "",
-            "## 3. coregoal",
-            "",
-            "1. ",
-            "2. ",
-            "3. ",
-            "",
-            "## 4.  ",
-            "",
-            "pleaserecord . ",
-            "",
-            "## 5.  range",
-            "",
-            " stageplancompleted:",
+            "## 3. 核心目标",
             "",
             "1. ",
             "2. ",
             "3. ",
             "",
-            "## 6.  not ",
+            "## 4. 技术路线",
             "",
-            " stage not :",
+            "请记录当前采用的技术路线。",
+            "",
+            "## 5. 当前范围",
+            "",
+            "本阶段计划完成：",
+            "",
+            "1. ",
+            "2. ",
+            "3. ",
+            "",
+            "## 6. 暂不包含",
+            "",
+            "本阶段暂不处理：",
             "",
             "1. ",
             "2. ",
@@ -160,29 +160,29 @@ def build_progress_log(project: str) -> str:
     today = datetime.now().strftime("%Y-%m-%d")
 
     return build_markdown(
-        title=f"{project} project progressrecord",
+        title=f"{project} 项目进度记录",
         project=project,
         doc_type="progress_log",
-        tags=["project progress", " record"],
+        tags=["项目进度", "进度记录"],
         body_lines=[
-            f"# {project} project progressrecord",
+            f"# {project} 项目进度记录",
             "",
             f"## {today}",
             "",
-            "### alreadycompleted",
+            "### 已完成",
             "",
-            "1. create knowledge base . ",
-            "2.  basicdocument. ",
+            "1. 创建项目知识库模板。",
+            "2. 初始化项目基础文档。",
             "",
-            "###  stage",
+            "### 当前阶段",
             "",
-            " . ",
+            "待填写。",
             "",
-            "### next steps",
+            "### 下一步",
             "",
-            "1.  project overview. ",
-            "2.  . ",
-            "3. record aissue or decision. ",
+            "1. 补充项目概述。",
+            "2. 补充技术路线。",
+            "3. 记录第一个问题或决策。",
             "",
         ],
     )
@@ -190,34 +190,34 @@ def build_progress_log(project: str) -> str:
 
 def build_issues(project: str) -> str:
     return build_markdown(
-        title=f"{project} issue record",
+        title=f"{project} 问题记录",
         project=project,
         doc_type="issues",
-        tags=["issue record", "Bug", " "],
+        tags=["问题记录", "Bug", "故障排查"],
         body_lines=[
-            f"# {project} issue record",
+            f"# {project} 问题记录",
             "",
-            "## issue ",
+            "## 问题模板",
             "",
-            "### issuetitle",
+            "### 问题标题",
             "",
-            " . ",
+            "待填写。",
             "",
-            "### issue ",
+            "### 问题现象",
             "",
-            " . ",
+            "待填写。",
             "",
-            "### reason ",
+            "### 原因分析",
             "",
-            " . ",
+            "待填写。",
             "",
-            "### resolve ",
+            "### 解决方案",
             "",
-            " . ",
+            "待填写。",
             "",
-            "### current status",
+            "### 当前状态",
             "",
-            " . ",
+            "待填写。",
             "",
         ],
     )
@@ -225,40 +225,40 @@ def build_issues(project: str) -> str:
 
 def build_decisions(project: str) -> str:
     return build_markdown(
-        title=f"{project} decision record",
+        title=f"{project} 决策记录",
         project=project,
         doc_type="decisions",
-        tags=["decision record", " decision"],
+        tags=["决策记录", "技术决策"],
         body_lines=[
-            f"# {project} decision record",
+            f"# {project} 决策记录",
             "",
-            "## decision ",
+            "## 决策模板",
             "",
-            "### decisiontitle",
+            "### 决策标题",
             "",
-            " . ",
+            "待填写。",
             "",
-            "### decision ",
+            "### 决策背景",
             "",
-            " . ",
+            "待填写。",
             "",
-            "### can ",
+            "### 可选方案",
             "",
-            "1.   A:",
-            "2.   B:",
-            "3.   C:",
+            "1. 方案 A：",
+            "2. 方案 B：",
+            "3. 方案 C：",
             "",
-            "###  ",
+            "### 最终选择",
             "",
-            " . ",
+            "待填写。",
             "",
-            "###  reason",
+            "### 选择原因",
             "",
-            " . ",
+            "待填写。",
             "",
-            "### later ",
+            "### 后续影响",
             "",
-            " . ",
+            "待填写。",
             "",
         ],
     )
@@ -266,34 +266,34 @@ def build_decisions(project: str) -> str:
 
 def build_technical_notes(project: str) -> str:
     return build_markdown(
-        title=f"{project}  ",
+        title=f"{project} 技术笔记",
         project=project,
         doc_type="technical_notes",
-        tags=[" ", "knowledgerecord"],
+        tags=["技术笔记", "知识记录"],
         body_lines=[
-            f"# {project}  ",
+            f"# {project} 技术笔记",
             "",
-            "##  ",
+            "## 技术主题",
             "",
-            " . ",
+            "待填写。",
             "",
-            "## core ",
+            "## 核心概念",
             "",
-            " . ",
+            "待填写。",
             "",
-            "##  command /  ",
+            "## 关键命令 / 代码",
             "",
             "```text",
-            " ",
+            "待填写",
             "```",
             "",
-            "##  items",
+            "## 注意事项",
             "",
-            " . ",
+            "待填写。",
             "",
-            "##  records",
+            "## 参考资料",
             "",
-            " . ",
+            "待填写。",
             "",
         ],
     )
@@ -301,36 +301,36 @@ def build_technical_notes(project: str) -> str:
 
 def build_next_steps(project: str) -> str:
     return build_markdown(
-        title=f"{project} next stepsplan",
+        title=f"{project} 下一步计划",
         project=project,
         doc_type="next_steps",
-        tags=["next steps", "tasksplan"],
+        tags=["下一步", "任务计划"],
         body_lines=[
-            f"# {project} next stepsplan",
+            f"# {project} 下一步计划",
             "",
-            "##  tasks",
-            "",
-            "1. ",
-            "2. ",
-            "3. ",
-            "",
-            "## in tasks",
+            "## 短期任务",
             "",
             "1. ",
             "2. ",
             "3. ",
             "",
-            "## long-term ",
+            "## 中期任务",
             "",
             "1. ",
             "2. ",
             "3. ",
             "",
-            "##  priority",
+            "## 长期方向",
             "",
-            "1.  priority:",
-            "2. inpriority:",
-            "3.  priority:",
+            "1. ",
+            "2. ",
+            "3. ",
+            "",
+            "## 当前优先级",
+            "",
+            "1. 高优先级：",
+            "2. 中优先级：",
+            "3. 低优先级：",
             "",
         ],
     )
@@ -340,7 +340,7 @@ def create_project(project: str, overwrite: bool = False) -> None:
     safe_project = sanitize_name(project)
 
     if not safe_project:
-        raise ValueError(" notcanis empty. ")
+        raise ValueError("项目名不能为空。")
 
     project_dir = PROJECT_ROOT / safe_project
     notes_dir = project_dir / "notes"
@@ -358,8 +358,8 @@ def create_project(project: str, overwrite: bool = False) -> None:
     project_dir.mkdir(parents=True, exist_ok=True)
     notes_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"project directory:{project_dir}")
-    print(f"notes directory:{notes_dir}")
+    print(f"项目目录：{project_dir}")
+    print(f"notes 目录：{notes_dir}")
 
     created_count = 0
     skipped_count = 0
@@ -370,35 +370,35 @@ def create_project(project: str, overwrite: bool = False) -> None:
 
         if created:
             created_count += 1
-            print(f"[create] {file_path}")
+            print(f"[创建] {file_path}")
         else:
             skipped_count += 1
-            print(f"[skip] alreadyexists:{file_path}")
+            print(f"[跳过] 已存在：{file_path}")
 
     print("")
-    print("project template completed. ")
-    print(f"createfile :{created_count}")
-    print(f"skipfile :{skipped_count}")
+    print("项目模板生成完成。")
+    print(f"创建文件数：{created_count}")
+    print(f"跳过文件数：{skipped_count}")
     print("")
-    print("recommended next command:")
+    print("建议下一步执行：")
     print("python update_index.py")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Personal Project Secretary + Knowledge Base: project template tool"
+        description="个人项目秘书 + 数据知识库：新项目模板生成工具"
     )
 
     parser.add_argument(
         "--project",
         required=True,
-        help="project name, for example Electronics_Project",
+        help="项目名称，例如 Electronics_Project",
     )
 
     parser.add_argument(
         "--overwrite",
         action="store_true",
-        help="iffilealreadyexists,  . defaultnot . ",
+        help="如果文件已存在，则覆盖。默认不覆盖。",
     )
 
     args = parser.parse_args()

@@ -26,7 +26,7 @@ EXCLUDE_FILE_SUFFIXES = {
 
 def should_skip(path: Path) -> bool:
     """
-    determinefile or directorywhether skip. 
+    判断文件或目录是否需要跳过。
     """
     parts = set(path.parts)
 
@@ -41,8 +41,8 @@ def should_skip(path: Path) -> bool:
 
 def collect_files() -> list[Path]:
     """
-    collect backupfile. 
-    defaultbackup knowledge base root,  ,  , Qdrant  directoryand backup. 
+    收集需要备份的文件。
+    默认备份整个知识库根目录，但排除虚拟环境、缓存、Qdrant 数据目录和历史备份。
     """
     files = []
 
@@ -58,7 +58,7 @@ def collect_files() -> list[Path]:
 
 def run_list_docs(output_path: Path) -> None:
     """
-    execute list_docs.py,  document save tobackup directory. 
+    执行 list_docs.py，把当前入库文档状态保存到备份目录。
     """
     base_dir = Path(__file__).parent.resolve()
     python_exe = sys.executable
@@ -73,9 +73,9 @@ def run_list_docs(output_path: Path) -> None:
     )
 
     content = []
-    content.append("# Current list of documents added to the database")
+    content.append("# 当前入库文档列表")
     content.append("")
-    content.append(f"Generation time:{datetime.now().isoformat(timespec='seconds')}")
+    content.append(f"生成时间：{datetime.now().isoformat(timespec='seconds')}")
     content.append("")
     content.append("```text")
     content.append(result.stdout)
@@ -93,7 +93,7 @@ def run_list_docs(output_path: Path) -> None:
 
 def create_zip_backup(files: list[Path], backup_zip_path: Path) -> None:
     """
-    create zip backup package. 
+    创建 zip 备份包。
     """
     with ZipFile(backup_zip_path, "w", ZIP_DEFLATED) as zipf:
         for file_path in files:
@@ -105,44 +105,44 @@ def main():
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    backup_name = f"{timestamp}_personal_project_secretary_backup"
+    backup_name = f"{timestamp}_Personal_Knowledge_Base_backup"
     temp_dir = BACKUP_DIR / backup_name
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Personal Project Secretary + Data Knowledge Base: Backup Tool")
-    print(f"Knowledge Base Root Directory:{KNOWLEDGE_ROOT}")
-    print(f"Backup output directory:{BACKUP_DIR}")
+    print("个人项目秘书 + 数据知识库：备份工具")
+    print(f"知识库根目录：{KNOWLEDGE_ROOT}")
+    print(f"备份输出目录：{BACKUP_DIR}")
 
-    print("\n Generating a list of currently added documents...")
+    print("\n正在生成当前入库文档列表...")
     list_docs_path = temp_dir / "list_docs_snapshot.md"
     run_list_docs(list_docs_path)
 
-    print("Collecting files that need to be backed up...")
+    print("正在收集需要备份的文件...")
     files = collect_files()
 
-    #  list_docs_snapshot.md  backup
+    # 把 list_docs_snapshot.md 也加入备份
     files.append(list_docs_path)
 
-    print(f"Number of files to be backed up:{len(files)}")
+    print(f"待备份文件数量：{len(files)}")
 
     backup_zip_path = BACKUP_DIR / f"{backup_name}.zip"
 
-    print("Creating a zip backup package...")
+    print("正在创建 zip 备份包...")
     create_zip_backup(files, backup_zip_path)
 
-    # cleanuptemporarydirectory
+    # 清理临时目录
     try:
         shutil.rmtree(temp_dir)
     except Exception:
         pass
 
-    print("\n Backup complete:")
+    print("\n备份完成：")
     print(backup_zip_path)
     print("")
-    print("suggestion:")
-    print("1. Regularly copy the backups directory to an external hard drive or cloud storage.")
-    print("2. Run `python backup_kb.py` once after each stage is completed.")
-    print("3. If the Qdrant data becomes important later, add a dedicated backup for the Docker volume.")
+    print("建议：")
+    print("1. 定期把 backups 目录复制到移动硬盘或云盘。")
+    print("2. 每完成一个阶段后执行一次 python backup_kb.py。")
+    print("3. 如果后续 Qdrant 数据很重要，再增加 Docker volume 专项备份。")
 
 
 if __name__ == "__main__":

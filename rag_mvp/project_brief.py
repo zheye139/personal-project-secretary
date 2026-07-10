@@ -1,5 +1,4 @@
 import argparse
-import os
 import re
 import requests
 import sys
@@ -10,16 +9,17 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 import config
+import vector_store_config
 
 
 # ============================================================
-# base configuration
+# 基础配置
 # ============================================================
 
 OLLAMA_URL = config.OLLAMA_URL
 CHAT_MODEL = config.CHAT_MODEL
-QDRANT_URL = config.QDRANT_URL
-COLLECTION_NAME = config.COLLECTION_NAME
+QDRANT_URL = vector_store_config.get_qdrant_url()
+COLLECTION_NAME = vector_store_config.get_collection_name()
 KNOWLEDGE_ROOT = config.KNOWLEDGE_ROOT
 
 PROJECT_BRIEF_DIR = getattr(
@@ -30,7 +30,7 @@ PROJECT_BRIEF_DIR = getattr(
 
 
 # ============================================================
-# Windows / PowerShell English output 
+# Windows / PowerShell 中文输出处理
 # ============================================================
 
 try:
@@ -41,21 +41,10 @@ except Exception:
 
 
 # ============================================================
-# Prevent local service requests from going through system proxies.
+# 避免访问本机服务时走系统代理
 # ============================================================
 
-for key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-]:
-    os.environ.pop(key, None)
-
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+vector_store_config.configure_qdrant_environment()
 
 
 DEFAULT_DOC_TYPES = [
@@ -74,7 +63,7 @@ DEFAULT_DOC_TYPES = [
 
 def clean_model_response(text: str) -> str:
     """
-    cleanup qwen3 cancan  <think>...</think> content. 
+    清理 qwen3 可能输出的 <think>...</think> 内容。
     """
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     return text.strip()
@@ -82,19 +71,15 @@ def clean_model_response(text: str) -> str:
 
 def get_qdrant_client() -> QdrantClient:
     """
-    create Qdrant  . 
+    创建 Qdrant 客户端。
     """
-    return QdrantClient(
-        url=QDRANT_URL,
-        check_compatibility=False,
-        timeout=60,
-    )
+    return vector_store_config.get_qdrant_client(timeout=60)
 
 
 def build_project_filter(project: str):
     """
-    Qdrant   project filter. 
-    doc_type laterin Python infilter,   qdrant-client  . 
+    Qdrant 层按 project 过滤。
+    doc_type 后续在 Python 中过滤，方便兼容更多 qdrant-client 版本。
     """
     return Filter(
         must=[
@@ -108,8 +93,8 @@ def build_project_filter(project: str):
 
 def parse_doc_types(raw_doc_types: list[str] | None) -> list[str]:
     """
-    parsecommand  doc_type. 
-     :
+    解析命令行传入的 doc_type。
+    支持：
     --doc-type progress_log
     --doc-type progress_log,next_steps
     --doc-type progress_log --doc-type weekly_report
@@ -128,7 +113,7 @@ def parse_doc_types(raw_doc_types: list[str] | None) -> list[str]:
 
 def safe_text_preview(text: str, max_chars: int = 240) -> str:
     """
-     preview . 
+    生成终端预览文本。
     """
     text = text.replace("\n", " ").strip()
 
@@ -145,16 +130,16 @@ def load_project_contexts(
     max_chars: int = 26000,
 ) -> list[dict]:
     """
-    from Qdrant inreadspecifiedproject records. 
+    从 Qdrant 中读取指定项目资料。
 
-    project_brief.py notis question answeringretrieval, insteadproject status , 
-    sothisin  scroll read records, then  doc_type  . 
+    project_brief.py 不是单纯问答检索，而是项目状态汇总，
+    所以这里使用 scroll 读取项目相关资料，再按 doc_type 筛选。
     """
     client = get_qdrant_client()
 
     if not client.collection_exists(COLLECTION_NAME):
         raise RuntimeError(
-            f"collection does not exist:{COLLECTION_NAME}, please first  python update_index.py"
+            f"集合不存在：{COLLECTION_NAME}，请先运行 python update_index.py"
         )
 
     scroll_filter = build_project_filter(project)
@@ -233,22 +218,22 @@ def load_project_contexts(
 
 def build_context_text(contexts: list[dict]) -> str:
     """
-    project records modelcan . 
+    将项目资料整理成模型可读上下文。
     """
     lines = []
 
     for index, ctx in enumerate(contexts, start=1):
-        lines.append(f"## records {index}")
+        lines.append(f"## 资料 {index}")
         lines.append("")
-        lines.append(f"- record category:{ctx.get('category', '')}")
-        lines.append(f"-  :{ctx.get('project', '')}")
-        lines.append(f"- document type:{ctx.get('doc_type', '')}")
-        lines.append(f"- title:{ctx.get('title', '')}")
-        lines.append(f"- tags:{ctx.get('tags', [])}")
-        lines.append(f"- file:{ctx.get('file_name', '')}")
-        lines.append(f"- source:{ctx.get('source', '')}")
-        lines.append(f"- chunk:{ctx.get('chunk_index', '')}")
-        lines.append(f"- updated at:{ctx.get('updated_at', '')}")
+        lines.append(f"- 资料大类：{ctx.get('category', '')}")
+        lines.append(f"- 项目：{ctx.get('project', '')}")
+        lines.append(f"- 文档类型：{ctx.get('doc_type', '')}")
+        lines.append(f"- 标题：{ctx.get('title', '')}")
+        lines.append(f"- 标签：{ctx.get('tags', [])}")
+        lines.append(f"- 文件：{ctx.get('file_name', '')}")
+        lines.append(f"- 来源：{ctx.get('source', '')}")
+        lines.append(f"- 片段：{ctx.get('chunk_index', '')}")
+        lines.append(f"- 更新时间：{ctx.get('updated_at', '')}")
         lines.append("")
         lines.append(ctx.get("text", ""))
         lines.append("")
@@ -258,7 +243,7 @@ def build_context_text(contexts: list[dict]) -> str:
 
 def build_source_summary(contexts: list[dict]) -> list[str]:
     """
-     source list. 
+    生成来源清单。
     """
     sources = []
 
@@ -278,21 +263,21 @@ def build_source_summary(contexts: list[dict]) -> list[str]:
 
 def generate_project_brief(project: str, contexts: list[dict]) -> str:
     """
-    call qwen3:8b  project brief. 
+    调用 qwen3:8b 生成项目简报。
     """
     if not contexts:
         lines = [
-            f"# {project} project brief",
+            f"# {project} 项目简报",
             "",
-            "Loaded project records are incomplete. ",
+            "当前没有读取到足够的项目资料，无法生成完整简报。",
             "",
-            "recommended additions:",
+            "建议补充：",
             "",
             "1. project_overview.md",
             "2. progress_log.md",
             "3. issues.md",
             "4. next_steps.md",
-            "5. project_report or weekly_report",
+            "5. project_report 或 weekly_report",
             "",
         ]
         return "\n".join(lines)
@@ -300,50 +285,50 @@ def generate_project_brief(project: str, contexts: list[dict]) -> str:
     context_text = build_context_text(contexts)
 
     prompt_lines = [
-        " is Personal Project Secretaryand . ",
+        "你是我的个人项目秘书和项目管理助手。",
         "",
-        "please project records,  ,  ,  viewproject brief. ",
+        "请根据下面的项目资料，生成一份简短、清晰、适合日常查看的项目简报。",
         "",
-        "[project name]",
+        "【项目名称】",
         project,
         "",
-        "[project records]",
+        "【项目资料】",
         context_text,
         "",
-        "[ ]",
-        "Use English Markdown output. ",
+        "【输出要求】",
+        "请使用中文 Markdown 输出。",
         "",
-        f"# {project} project brief",
+        f"# {project} 项目简报",
         "",
-        "## 1.  ",
-        " description . ",
+        "## 1. 一句话状态",
+        "用一句话说明项目当前处于什么状态。",
         "",
-        "## 2. current status",
-        "  3 to 6  stage, already capabilityand . ",
+        "## 2. 当前状态",
+        "用 3 到 6 条概括项目当前阶段、已具备能力和整体进展。",
         "",
-        "## 3. recent ",
-        "listrecentalready completedor items. ",
+        "## 3. 最近进展",
+        "列出最近已经完成或推进的事项。",
         "",
-        "## 4. current issues",
-        "list existsissue, risksor items. ",
-        "ifrecordsin has issue, please 'recordsinnot found issue'. ",
+        "## 4. 当前问题",
+        "列出当前明确存在的问题、风险或待确认事项。",
+        "如果资料中没有明确问题，请写“资料中未发现明确问题”。",
         "",
-        "## 5. next actions",
-        "list recommendations  3 to 8  next actions. ",
-        " canexecute. ",
+        "## 5. 下一步行动",
+        "列出最建议推进的 3 到 8 个下一步行动。",
+        "要求每一项都尽量可执行。",
         "",
-        "## 6. risk reminders",
-        "listlatercancan risks. ",
+        "## 6. 风险提醒",
+        "列出后续可能影响项目推进的风险。",
         "",
-        "## 7. recommended records to add",
-        "identifyas knowledge base complete,  this record. ",
+        "## 7. 建议补充的记录",
+        "指出为了让知识库更完整，还应该补充哪些记录。",
         "",
-        " :",
-        "1. only answer based on records, do not fabricate information. ",
-        "2. if insufficient records, please 'insufficient records, no '. ",
-        "3. do not output reasoning process. ",
-        "4. not  <think> tags. ",
-        "5.  project report,  quicklyview. ",
+        "额外要求：",
+        "1. 只根据资料回答，不要编造。",
+        "2. 如果资料不足，请明确写“资料不足，无法确认”。",
+        "3. 不要输出思考过程。",
+        "4. 不要输出 <think> 标签。",
+        "5. 简报要短于项目报告，适合日常快速查看。",
     ]
 
     prompt = "\n".join(prompt_lines)
@@ -370,7 +355,7 @@ def save_project_brief(
     doc_types: list[str],
 ) -> Path:
     """
-    saveproject briefas Markdown,  laterre- . 
+    保存项目简报为 Markdown，方便后续重新入库。
     """
     PROJECT_BRIEF_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -385,12 +370,12 @@ def save_project_brief(
     lines = []
 
     lines.append("---")
-    lines.append(f"title: {project} project brief {timestamp}")
+    lines.append(f"title: {project} 项目简报 {timestamp}")
     lines.append(f"created: {now.isoformat(timespec='seconds')}")
     lines.append("category: summary")
     lines.append(f"project: {project}")
     lines.append("doc_type: project_brief")
-    lines.append("tags: [project brief, M2.2, auto generated, personal secretary]")
+    lines.append("tags: [项目简报, M2.2, 自动生成, 个人秘书]")
     lines.append(f"source_doc_types: {doc_type_text}")
     lines.append("---")
     lines.append("")
@@ -398,11 +383,11 @@ def save_project_brief(
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("##  project brief knowledge basesource")
+    lines.append("## 本项目简报使用的知识库来源")
     lines.append("")
 
     if not sources:
-        lines.append("No source recorded. ")
+        lines.append("未记录来源。")
     else:
         for source in sources:
             lines.append(f"- {source}")
@@ -415,13 +400,13 @@ def save_project_brief(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Personal Project Secretary + Knowledge Base: project brief"
+        description="个人项目秘书 + 数据知识库：生成项目简报"
     )
 
     parser.add_argument(
         "--project",
         required=True,
-        help="project name, for example Personal_Project_Assistant",
+        help="项目名称，例如 Personal_Project_Assistant",
     )
 
     parser.add_argument(
@@ -429,9 +414,9 @@ def main():
         action="append",
         default=None,
         help=(
-            "specified and document type. "
-            "canduplicate ,  can . "
-            "default project overview,  , issue, next steps, project report, weekly report,  etc.. "
+            "指定参与分析的文档类型。"
+            "可重复使用，也可用逗号分隔。"
+            "默认包含项目概述、进度、问题、下一步、项目报告、周报、行动清单等。"
         ),
     )
 
@@ -439,31 +424,31 @@ def main():
         "--max-points",
         type=int,
         default=140,
-        help=" read chunk. ",
+        help="最多读取多少个向量片段。",
     )
 
     parser.add_argument(
         "--max-chars",
         type=int,
         default=26000,
-        help=" model. ",
+        help="最多提供多少字符给模型。",
     )
 
     parser.add_argument(
         "--no-save",
         action="store_true",
-        help="onlyin , notsave Markdown file. ",
+        help="只在终端输出，不保存 Markdown 文件。",
     )
 
     args = parser.parse_args()
 
     doc_types = parse_doc_types(args.doc_type)
 
-    print("Personal Project Secretary + Knowledge Base:project brief ")
-    print(f" :{args.project}")
-    print(f"goaldocument type:{doc_types}")
-    print(f" chunk :{args.max_points}")
-    print(f" :{args.max_chars}")
+    print("个人项目秘书 + 数据知识库：项目简报生成")
+    print(f"项目：{args.project}")
+    print(f"目标文档类型：{doc_types}")
+    print(f"最大片段数：{args.max_points}")
+    print(f"最大字符数：{args.max_chars}")
 
     contexts = load_project_contexts(
         project=args.project,
@@ -472,11 +457,11 @@ def main():
         max_chars=args.max_chars,
     )
 
-    print(f"candidate record chunk count:{len(contexts)}")
+    print(f"读取到候选资料片段数量：{len(contexts)}")
 
     if contexts:
         print("")
-        print("candidaterecordspreview:")
+        print("候选资料预览：")
 
         for index, ctx in enumerate(contexts[:8], start=1):
             print(
@@ -485,11 +470,11 @@ def main():
                 f"{ctx.get('file_name', '')} | "
                 f"{ctx.get('updated_at', '')}"
             )
-            print(f"   source:{ctx.get('source', '')}")
-            print(f"   content:{safe_text_preview(ctx.get('text', ''), 120)}")
+            print(f"   来源：{ctx.get('source', '')}")
+            print(f"   内容：{safe_text_preview(ctx.get('text', ''), 120)}")
 
     print("")
-    print("running project brief...")
+    print("正在生成项目简报...")
 
     brief = generate_project_brief(
         project=args.project,
@@ -498,13 +483,13 @@ def main():
 
     print("")
     print("=" * 80)
-    print("project brief")
+    print("项目简报")
     print("=" * 80)
     print(brief)
 
     if args.no_save:
         print("")
-        print("already  --no-save,  save Markdown file. ")
+        print("已选择 --no-save，未保存 Markdown 文件。")
         return
 
     file_path = save_project_brief(
@@ -515,14 +500,14 @@ def main():
     )
 
     print("")
-    print("project briefalreadysave:")
+    print("项目简报已保存：")
     print(file_path)
     print("")
-    print("recommended next command:")
+    print("建议下一步执行：")
     print("python update_index.py")
     print(
         'python ask.py --doc-type project_brief '
-        '" project briefsummary ？"'
+        '"当前项目简报总结了什么？"'
     )
 
 

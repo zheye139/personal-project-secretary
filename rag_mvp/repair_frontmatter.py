@@ -61,12 +61,12 @@ def collect_markdown_files() -> list[Path]:
 
         rel_parts = path.relative_to(KNOWLEDGE_ROOT).parts
 
-        #   99_System/docs  andrepair
+        # 允许 99_System/docs 入库和修复
         if len(rel_parts) >= 2 and rel_parts[0] == "99_System" and rel_parts[1] == "docs":
             files.append(path)
             continue
 
-        # skip 99_System  directory
+        # 跳过 99_System 其他目录
         if rel_parts and rel_parts[0] == "99_System":
             continue
 
@@ -132,10 +132,10 @@ def infer_project(path: Path, category: str) -> str:
         return rel_parts[1]
 
     if len(rel_parts) >= 2 and rel_parts[0] == "99_System":
-        return "Demo_Project"
+        return "Personal_Project_Assistant"
 
     if category in {"knowledge", "decision", "problem", "summary", "system"}:
-        return "Demo_Project"
+        return "Personal_Project_Assistant"
 
     return "unknown"
 
@@ -177,7 +177,7 @@ def infer_tags(category: str, doc_type: str) -> list[str]:
     if doc_type:
         tags.append(doc_type)
 
-    tags.append("automatic Frontmatter")
+    tags.append("自动补全Frontmatter")
 
     return tags
 
@@ -196,7 +196,7 @@ def normalize_tags(raw_value, category: str, doc_type: str) -> str:
     if value.startswith("[") and value.endswith("]"):
         return value
 
-    # if is ,  as 
+    # 如果原来是普通字符串，转为列表格式
     items = [item.strip() for item in value.split(",") if item.strip()]
     if not items:
         items = infer_tags(category, doc_type)
@@ -229,7 +229,7 @@ def build_fixed_metadata(path: Path, metadata: dict) -> dict:
     fixed["doc_type"] = doc_type
     fixed["tags"] = tags
 
-    # if documentonlyhas type,  has doc_type,   type not 
+    # 如果旧文档只有 type，没有 doc_type，则保留 type 不强删
     return fixed
 
 
@@ -252,7 +252,7 @@ def build_frontmatter(metadata: dict) -> str:
         lines.append(f"{key}: {value}")
         used_keys.add(key)
 
-    #  alreadyhasfield
+    # 保留其他已有字段
     for key, value in metadata.items():
         if key in used_keys:
             continue
@@ -269,11 +269,11 @@ def repair_content(path: Path, text: str) -> tuple[str, list[str]]:
     issues = []
 
     if not text.strip():
-        issues.append("empty file, skiprepair")
+        issues.append("空文件，跳过修复")
         return text, issues
 
     if not has_frontmatter:
-        issues.append("  Frontmatter")
+        issues.append("补充 Frontmatter")
 
     fixed_metadata = build_fixed_metadata(path, metadata)
 
@@ -282,18 +282,18 @@ def repair_content(path: Path, text: str) -> tuple[str, list[str]]:
         new_value = fixed_metadata.get(field, "").strip()
 
         if not old_value:
-            issues.append(f" field:{field} = {new_value}")
+            issues.append(f"补充字段：{field} = {new_value}")
 
     if metadata.get("tags", "").strip() in {"", "[]"}:
-        issues.append(f"  tags:{fixed_metadata.get('tags', '')}")
+        issues.append(f"补充 tags：{fixed_metadata.get('tags', '')}")
 
     fixed_frontmatter = build_frontmatter(fixed_metadata)
 
     fixed_body = body.strip()
 
     if not fixed_body:
-        fixed_body = f"# {fixed_metadata['title']}\n\n content. "
-        issues.append("body is empty,  body")
+        fixed_body = f"# {fixed_metadata['title']}\n\n待补充内容。"
+        issues.append("正文为空，添加占位正文")
 
     fixed_text = fixed_frontmatter + fixed_body + "\n"
 
@@ -309,29 +309,29 @@ def backup_original(path: Path, backup_root: Path) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Personal Project Secretary + Knowledge Base:batchrepair Markdown Frontmatter"
+        description="个人项目秘书 + 数据知识库：批量修复 Markdown Frontmatter"
     )
 
     parser.add_argument(
         "--execute",
         action="store_true",
-        help="actually repair . defaultonlypreview, not file. ",
+        help="真正写入修复结果。默认只预览，不修改文件。",
     )
 
     parser.add_argument(
         "--only-missing",
         action="store_true",
-        help="onlyrepairmissing Frontmatter file;default repairmissingfieldfile. ",
+        help="只修复缺少 Frontmatter 的文件；默认也修复缺少字段的文件。",
     )
 
     args = parser.parse_args()
 
     files = collect_markdown_files()
 
-    print("Personal Project Secretary + Knowledge Base:Frontmatter repairtool")
-    print(f"knowledge base root:{KNOWLEDGE_ROOT}")
-    print(f"check Markdown file count:{len(files)}")
-    print(f"executerepair:{args.execute}")
+    print("个人项目秘书 + 数据知识库：Frontmatter 修复工具")
+    print(f"知识库根目录：{KNOWLEDGE_ROOT}")
+    print(f"检查 Markdown 文件数量：{len(files)}")
+    print(f"执行修复：{args.execute}")
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     backup_root = BACKUP_DIR / "frontmatter_repair" / timestamp
@@ -349,8 +349,8 @@ def main():
 
         fixed_text, issues = repair_content(path, text)
 
-        #  has issue, or empty fileskip
-        actionable_issues = [issue for issue in issues if issue != "empty file, skiprepair"]
+        # 没有问题，或者空文件跳过
+        actionable_issues = [issue for issue in issues if issue != "空文件，跳过修复"]
 
         if not actionable_issues:
             skipped_count += 1
@@ -359,7 +359,7 @@ def main():
         rel_path = path.relative_to(KNOWLEDGE_ROOT)
 
         print("")
-        print(f"[ repair] {rel_path}")
+        print(f"[待修复] {rel_path}")
         for issue in issues:
             print(f"  - {issue}")
 
@@ -368,25 +368,25 @@ def main():
         if args.execute:
             backup_original(path, backup_root)
             path.write_text(fixed_text, encoding="utf-8")
-            print("  alreadyrepairandbackup file. ")
+            print("  已修复并备份原文件。")
 
     print("")
-    print("=== repairsummary ===")
-    print(f" repairfile count:{changed_count}")
-    print(f"skipfile count:{skipped_count}")
+    print("=== 修复总结 ===")
+    print(f"需要修复文件数量：{changed_count}")
+    print(f"跳过文件数量：{skipped_count}")
 
     if args.execute:
         print("")
-        print("repairalreadyexecute. ")
-        print(f" filebackup directory:{backup_root}")
+        print("修复已执行。")
+        print(f"原文件备份目录：{backup_root}")
         print("")
-        print("recommended next command:")
+        print("建议下一步执行：")
         print("python validate_kb.py")
         print("python update_index.py")
     else:
         print("")
-        print(" aspreview mode,  file. ")
-        print("After confirmation, run:")
+        print("当前为预览模式，未修改任何文件。")
+        print("确认无误后执行：")
         print("python repair_frontmatter.py --execute")
 
 

@@ -1,46 +1,31 @@
-import os
 from collections import Counter
 
-from qdrant_client import QdrantClient
+import vector_store_config
 
-from config import QDRANT_URL, COLLECTION_NAME
+QDRANT_URL = vector_store_config.get_qdrant_url()
+COLLECTION_NAME = vector_store_config.get_collection_name()
 
 
-# Prevent local service requests from going through system proxies.
-for key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-]:
-    os.environ.pop(key, None)
-
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+# 避免访问本机服务时走系统代理
+vector_store_config.configure_qdrant_environment()
 
 
 def main():
-    client = QdrantClient(
-        url=QDRANT_URL,
-        check_compatibility=False,
-        timeout=60,
-    )
+    client = vector_store_config.get_qdrant_client(timeout=60)
 
     if not client.collection_exists(COLLECTION_NAME):
-        print(f"collection does not exist:{COLLECTION_NAME}")
-        print("please first :python ingest.py")
+        print(f"集合不存在：{COLLECTION_NAME}")
+        print("请先运行：python ingest.py")
         return
 
     info = client.get_collection(COLLECTION_NAME)
 
-    print("=== Qdrant collection  ===")
-    print(f"collection name:{COLLECTION_NAME}")
-    print(f"vector count:{info.points_count}")
-    print(f"vector configuration:{info.config.params.vectors}")
+    print("=== Qdrant 集合信息 ===")
+    print(f"集合名称：{COLLECTION_NAME}")
+    print(f"向量数量：{info.points_count}")
+    print(f"向量配置：{info.config.params.vectors}")
 
-    print("\n===   ===")
+    print("\n=== 示例数据 ===")
 
     points, _ = client.scroll(
         collection_name=COLLECTION_NAME,
@@ -50,7 +35,7 @@ def main():
     )
 
     if not points:
-        print("collection contains no data. ")
+        print("集合中没有数据。")
         return
 
     project_counter = Counter()
@@ -69,24 +54,24 @@ def main():
         project_counter[project] += 1
         doc_type_counter[doc_type] += 1
 
-        print(f"\n--- chunk {i} ---")
-        print(f" :{project}")
-        print(f"document type:{doc_type}")
-        print(f"file name:{file_name}")
-        print(f"source:{source}")
-        print(f"chunk index:{chunk_index}")
-        print(f"updated at:{updated_at}")
+        print(f"\n--- 片段 {i} ---")
+        print(f"项目：{project}")
+        print(f"文档类型：{doc_type}")
+        print(f"文件名：{file_name}")
+        print(f"来源：{source}")
+        print(f"片段序号：{chunk_index}")
+        print(f"更新时间：{updated_at}")
 
         text = payload.get("text", "")
         preview = text.replace("\n", " ")[:120]
-        print(f"content preview:{preview}...")
+        print(f"内容预览：{preview}...")
 
-    print("\n===   10  statistics ===")
-    print(" statistics:")
+    print("\n=== 前 10 条样本统计 ===")
+    print("项目统计：")
     for project, count in project_counter.items():
         print(f"- {project}: {count}")
 
-    print("document type statistics:")
+    print("文档类型统计：")
     for doc_type, count in doc_type_counter.items():
         print(f"- {doc_type}: {count}")
 

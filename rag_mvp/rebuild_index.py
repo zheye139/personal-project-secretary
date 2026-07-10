@@ -10,6 +10,7 @@ import requests
 
 import config
 import manifest_utils
+import vector_store_config
 
 
 # ============================================================
@@ -19,8 +20,8 @@ import manifest_utils
 BASE_DIR = Path(__file__).parent.resolve()
 
 KNOWLEDGE_ROOT = config.KNOWLEDGE_ROOT
-QDRANT_URL = config.QDRANT_URL
-COLLECTION_NAME = config.COLLECTION_NAME
+QDRANT_URL = vector_store_config.get_qdrant_url()
+COLLECTION_NAME = vector_store_config.get_collection_name()
 
 BACKUP_DIR = getattr(
     config,
@@ -33,6 +34,8 @@ INDEX_MANIFEST_PATH = getattr(
     "INDEX_MANIFEST_PATH",
     KNOWLEDGE_ROOT / "99_System" / "index_manifest.json",
 )
+
+vector_store_config.configure_qdrant_environment()
 
 
 # ============================================================
@@ -117,7 +120,7 @@ def collection_exists_by_rest() -> bool:
 
     这里不用 qdrant_client，避免某些 shard 损坏时 client 调用触发异常。
     """
-    url = f"{QDRANT_URL}/collections"
+    url = vector_store_config.get_qdrant_rest_url("/collections")
 
     resp = requests.get(url, timeout=30)
     resp.raise_for_status()
@@ -145,7 +148,9 @@ def delete_collection_by_rest() -> bool:
         print(f"[提示] collection 不存在，无需删除：{COLLECTION_NAME}")
         return True
 
-    url = f"{QDRANT_URL}/collections/{COLLECTION_NAME}"
+    url = vector_store_config.get_qdrant_rest_url(
+        f"/collections/{COLLECTION_NAME}"
+    )
 
     try:
         resp = requests.delete(url, timeout=120)

@@ -1,21 +1,10 @@
 from pathlib import Path
 from datetime import datetime
 import uuid
-import os
+import vector_store_config
 
-# Prevent Python/qdrant-client from using system proxies for local services.
-for key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-]:
-    os.environ.pop(key, None)
-
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+# 避免 Python/qdrant-client 访问本机服务时走系统代理
+vector_store_config.configure_qdrant_environment()
 
 import requests
 from tqdm import tqdm
@@ -26,18 +15,18 @@ from qdrant_client.models import Distance, VectorParams, PointStruct
 from config import (
     OLLAMA_URL,
     EMBED_MODEL,
-    QDRANT_URL,
-    COLLECTION_NAME,
     KNOWLEDGE_ROOT,
     CHUNK_MAX_CHARS,
 )
 
+COLLECTION_NAME = vector_store_config.get_collection_name()
+
 def embed_text(text: str) -> list[float]:
     text = text.strip()
     if not text:
-        raise ValueError("Cannot embed empty text")
+        raise ValueError("不能向量化空文本")
 
-    #   Ollama embedding  
+    # 新版 Ollama embedding 接口
     try:
         resp = requests.post(
             f"{OLLAMA_URL}/api/embed",
@@ -51,7 +40,7 @@ def embed_text(text: str) -> list[float]:
     except Exception:
         pass
 
-    #   Ollama embedding  
+    # 旧版 Ollama embedding 接口
     resp = requests.post(
         f"{OLLAMA_URL}/api/embeddings",
         json={"model": EMBED_MODEL, "prompt": text},
@@ -88,13 +77,13 @@ def split_markdown(text: str, max_chars: int = CHUNK_MAX_CHARS) -> list[str]:
 
 def collect_markdown_files() -> list[Path]:
     """
-    collectknowledge basein Markdown file. 
+    收集知识库中的 Markdown 文件。
 
-    rules:
-    1. defaultcollectknowledge basein .md file. 
-    2. skip .venv, backups, qdrant_storage, qdrant_local etc. directory. 
-    3.   99_System/docs indescriptiondocument . 
-    4. skip 99_System/rag_mvp in description scriptdirectorycontent. 
+    规则：
+    1. 默认收集知识库中的 .md 文件。
+    2. 跳过 .venv、backups、qdrant_storage、qdrant_local 等系统目录。
+    3. 允许 99_System/docs 中的说明文档入库。
+    4. 跳过 99_System/rag_mvp 中的工程说明以外脚本目录内容。
     """
     files = []
 
@@ -114,12 +103,12 @@ def collect_markdown_files() -> list[Path]:
 
         rel_parts = path.relative_to(KNOWLEDGE_ROOT).parts
 
-        #   99_System/docs indescriptiondocument 
+        # 允许 99_System/docs 里的说明文档入库
         if len(rel_parts) >= 2 and rel_parts[0] == "99_System" and rel_parts[1] == "docs":
             files.append(path)
             continue
 
-        # skip 99_System  directory,  script , backupdescriptionetc. 
+        # 跳过 99_System 其他目录，避免把脚本工程、备份说明等杂项误入库
         if rel_parts and rel_parts[0] == "99_System":
             continue
 
@@ -130,10 +119,10 @@ def collect_markdown_files() -> list[Path]:
 
 def infer_project_name(file_path: Path) -> str:
     """
-    frompathinferproject name. 
-    for example:
-    <your-knowledge-root>\\01_Projects\\Demo_Project\\progress_log.md
-    => Demo_Project
+    从路径推断项目名称。
+    例如：
+    D:\\Personal_Knowledge_Base\\01_Projects\\Personal_Project_Assistant\\progress_log.md
+    => Personal_Project_Assistant
     """
     try:
         rel_parts = file_path.relative_to(KNOWLEDGE_ROOT).parts
@@ -152,7 +141,7 @@ def infer_project_name(file_path: Path) -> str:
 
 def infer_doc_type(file_path: Path) -> str:
     """
-    fromfile nameinferdocument type. 
+    从文件名推断文档类型。
     """
     stem = file_path.stem.lower()
 
@@ -173,9 +162,9 @@ def infer_doc_type(file_path: Path) -> str:
 
 def parse_frontmatter(text: str) -> tuple[dict, str]:
     """
-    parse Markdown   YAML Frontmatter. 
-     only lightweightparse, not  pyyaml. 
-     :
+    解析 Markdown 顶部的简单 YAML Frontmatter。
+    当前只做轻量解析，不依赖 pyyaml。
+    支持：
     ---
     key: value
     tags: [a, b, c]
@@ -217,7 +206,7 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
 
 def infer_category(file_path: Path) -> str:
     """
-    from directoryinferrecord category. 
+    从一级目录推断资料大类。
     """
     try:
         rel_parts = file_path.relative_to(KNOWLEDGE_ROOT).parts
@@ -259,9 +248,9 @@ def ensure_collection(client: QdrantClient, vector_size: int):
                 distance=Distance.COSINE,
             ),
         )
-        print(f"collection created:{COLLECTION_NAME}")
+        print(f"已创建集合：{COLLECTION_NAME}")
     else:
-        print(f"collection already exists:{COLLECTION_NAME}")
+        print(f"集合已存在：{COLLECTION_NAME}")
 
 
 def make_point_id(source: str, chunk_index: int, chunk: str) -> str:
@@ -270,17 +259,13 @@ def make_point_id(source: str, chunk_index: int, chunk: str) -> str:
 
 
 def main():
-    client = QdrantClient(
-        url=QDRANT_URL,
-        check_compatibility=False,
-        timeout=60,
-    )
+    client = vector_store_config.get_qdrant_client(timeout=60)
 
     md_files = collect_markdown_files()
-    print(f"found Markdown file count:{len(md_files)}")
+    print(f"发现 Markdown 文件数量：{len(md_files)}")
 
     if not md_files:
-        print("No indexable Markdown files were found. ")
+        print("没有发现可入库的 Markdown 文件。")
         return
 
     all_items = []
@@ -297,7 +282,7 @@ def main():
         rel_path = str(file_path.relative_to(KNOWLEDGE_ROOT))
 
         if not chunks:
-            print(f"skipempty fileornovalidcontentfile:{rel_path}")
+            print(f"跳过空文件或无有效内容文件：{rel_path}")
             continue
 
         category = frontmatter.get("category") or infer_category(file_path)
@@ -329,18 +314,18 @@ def main():
             )
 
     if not all_items:
-        print("All Markdown files are empty and cannot be indexed. Please add at least one valid Markdown file first. ")
+        print("所有 Markdown 都为空，无法入库。请先写入至少一份有效 Markdown 内容。")
         return
 
     first_vector = embed_text(all_items[0]["text"])
     vector_size = len(first_vector)
-    print(f"vector dimension:{vector_size}")
+    print(f"向量维度：{vector_size}")
 
     ensure_collection(client, vector_size)
 
     points = []
 
-    for item in tqdm(all_items, desc=" and "):
+    for item in tqdm(all_items, desc="生成向量并入库"):
         vector = embed_text(item["text"])
 
         point_id = make_point_id(
@@ -374,8 +359,8 @@ def main():
         points=points,
     )
 
-    print("Indexing completed. ")
-    print(f"valid chunk count:{len(points)}")
+    print("入库完成。")
+    print(f"有效片段数量：{len(points)}")
 
     try:
         client.close()

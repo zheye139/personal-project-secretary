@@ -253,3 +253,65 @@ Safety boundary / 安全边界:
 - Ask does not save QA logs by default. / Ask 默认不会保存 QA 日志。
 
 日常使用 `update_index.py`，需要彻底重建索引时使用 `rebuild_index.py --execute`。
+
+## M5 Architecture / M5 架构
+
+```text
+environment variables
+        ↓
+config.py
+        ↓
+defaults
+        ↓
+vector_store_config.py
+        ↓
+Qdrant
+```
+
+`vector_store_config.py` is the shared Qdrant/Vector Store connection layer.
+
+当前 Vector Store 后端仍为 Qdrant。
+
+Qdrant can run on:
+
+- the current computer
+- Docker
+- a Windows/Linux service
+- a LAN server
+- a host/development PC accessed by a VM
+
+Main helper functions should be documented according to the actual local source code:
+
+```text
+get_qdrant_url()
+get_qdrant_timeout()
+get_collection_name()
+get_qdrant_hostname()
+configure_qdrant_environment()
+get_qdrant_client()
+get_qdrant_rest_url()
+```
+
+Do not document a function unless it exists in the release source.
+
+## Updated Core Principles / 更新后的核心原则
+
+1. Markdown is the primary source of truth.
+2. Qdrant is a rebuildable vector index.
+3. Ollama provides model services.
+4. Python scripts provide indexing, retrieval, reporting, and secretary workflows.
+5. Environment variables can override deployment-specific configuration.
+6. `config.py` remains a private local configuration fallback.
+7. `vector_store_config.py` is the unified Qdrant connection layer.
+8. Generated reports may be saved as Markdown and re-indexed when appropriate.
+
+中文：
+
+1. Markdown 是主数据源。
+2. Qdrant 是可重建向量索引。
+3. Ollama 提供模型服务。
+4. Python 脚本提供索引、检索、报告和秘书工作流。
+5. 环境变量用于覆盖部署差异。
+6. `config.py` 继续作为本地私人配置回退。
+7. `vector_store_config.py` 是统一 Qdrant 连接层。
+8. 生成报告可按需要保存为 Markdown 并重新入库。

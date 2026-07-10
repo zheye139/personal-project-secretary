@@ -15,31 +15,22 @@ import requests
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
 
+import vector_store_config
 from config import (
     OLLAMA_URL,
     CHAT_MODEL,
     EMBED_MODEL,
-    QDRANT_URL,
-    COLLECTION_NAME,
 )
+
+QDRANT_URL = vector_store_config.get_qdrant_url()
+COLLECTION_NAME = vector_store_config.get_collection_name()
 
 
 BASE_DIR = Path(__file__).parent.resolve()
 
 
-# Prevent local service requests from going through system proxies.
-for key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-]:
-    os.environ.pop(key, None)
-
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+# 避免访问本机服务时走系统代理
+vector_store_config.configure_qdrant_environment()
 
 
 def print_step(title: str) -> None:
@@ -59,33 +50,33 @@ def model_exists(target: str, models: list[str]) -> bool:
 
 
 def check_ollama_tags() -> bool:
-    print_step("1. Check the Ollama API and model list")
+    print_step("1. 检查 Ollama API 与模型列表")
 
     try:
         resp = requests.get(f"{OLLAMA_URL}/api/tags", timeout=15)
         resp.raise_for_status()
         data = resp.json()
     except Exception as e:
-        print(f"[Failure] Ollama API inaccessible:{e}")
+        print(f"[失败] Ollama API 不可访问：{e}")
         return False
 
     models = [m.get("name", "") for m in data.get("models", [])]
 
-    print(f"[Success] Ollama API is accessible:{OLLAMA_URL}")
-    print(f"Installed models:{models}")
+    print(f"[成功] Ollama API 可访问：{OLLAMA_URL}")
+    print(f"已安装模型：{models}")
 
     ok = True
 
     if model_exists(CHAT_MODEL, models):
-        print(f"[Success] Main dialogue model exists:{CHAT_MODEL}")
+        print(f"[成功] 主对话模型存在：{CHAT_MODEL}")
     else:
-        print(f"[Failure] The main dialogue model does not exist:{CHAT_MODEL}")
+        print(f"[失败] 主对话模型不存在：{CHAT_MODEL}")
         ok = False
 
     if model_exists(EMBED_MODEL, models):
-        print(f"[Success] Vector model exists:{EMBED_MODEL}")
+        print(f"[成功] 向量模型存在：{EMBED_MODEL}")
     else:
-        print(f"[Failure] Vector model does not exist:{EMBED_MODEL}")
+        print(f"[失败] 向量模型不存在：{EMBED_MODEL}")
         ok = False
 
     return ok
@@ -125,20 +116,20 @@ def embed_text(text: str) -> list[float]:
 
 
 def check_embedding() -> tuple[bool, list[float]]:
-    print_step("2. Check bge-m3 vector generation")
+    print_step("2. 检查 bge-m3 向量生成")
 
     try:
-        vector = embed_text("This is a personal project secretary knowledge base vector health check.")
+        vector = embed_text("这是一次个人项目秘书知识库向量健康检查。")
     except Exception as e:
-        print(f"[Failure] Vector generation failed:{e}")
+        print(f"[失败] 向量生成失败：{e}")
         return False, []
 
     if not vector:
-        print("[Failure] The return vector is empty.")
+        print("[失败] 返回向量为空。")
         return False, []
 
-    print("[Success] Vector generation is normal.")
-    print(f"Vector dimension:{len(vector)}")
+    print("[成功] 向量生成正常。")
+    print(f"向量维度：{len(vector)}")
 
     return True, vector
 
@@ -148,9 +139,9 @@ def clean_response(text: str) -> str:
 
 
 def check_chat_generation() -> bool:
-    print_step("3. Check qwen3:8b text generation")
+    print_step("3. 检查 qwen3:8b 文本生成")
 
-    prompt = "Please answer in English: Is the Personal Project Secretary Knowledge Base Health Check running? Do not provide your thought process."
+    prompt = "请用一句中文回答：个人项目秘书知识库健康检查是否正在运行？不要输出思考过程。"
 
     try:
         resp = requests.post(
@@ -166,52 +157,48 @@ def check_chat_generation() -> bool:
         data = resp.json()
         answer = clean_response(data.get("response", ""))
     except Exception as e:
-        print(f"[Failure] Text generation failed:{e}")
+        print(f"[失败] 文本生成失败：{e}")
         return False
 
     if not answer:
-        print("[Failure] Text generation returned an empty string.")
+        print("[失败] 文本生成返回为空。")
         return False
 
-    print("[Success] Text generation was successful.")
-    print("Model's answer:")
+    print("[成功] 文本生成正常。")
+    print("模型回答：")
     print(answer[:300])
 
     return True
 
 
 def get_qdrant_client() -> QdrantClient:
-    return QdrantClient(
-        url=QDRANT_URL,
-        check_compatibility=False,
-        timeout=60,
-    )
+    return vector_store_config.get_qdrant_client(timeout=60)
 
 
 def check_qdrant_collection() -> bool:
-    print_step("4. Check Qdrant and the main set")
+    print_step("4. 检查 Qdrant 与主集合")
 
     try:
         client = get_qdrant_client()
         collections = client.get_collections().collections
         names = [c.name for c in collections]
     except Exception as e:
-        print(f"[Failure] Qdrant is inaccessible:{e}")
+        print(f"[失败] Qdrant 不可访问：{e}")
         return False
 
-    print(f"[Success] Qdrant is accessible:{QDRANT_URL}")
-    print(f"Existing collection:{names}")
+    print(f"[成功] Qdrant 可访问：{QDRANT_URL}")
+    print(f"已有集合：{names}")
 
     if COLLECTION_NAME not in names:
-        print(f"[Failure] The main set does not exist:{COLLECTION_NAME}")
+        print(f"[失败] 主集合不存在：{COLLECTION_NAME}")
         return False
 
     try:
         info = client.get_collection(COLLECTION_NAME)
-        print(f"[Success] The main set exists:{COLLECTION_NAME}")
-        print(f"Number of vector fragments:{info.points_count}")
+        print(f"[成功] 主集合存在：{COLLECTION_NAME}")
+        print(f"向量片段数量：{info.points_count}")
     except Exception as e:
-        print(f"[Failure] Failed to read main collection information:{e}")
+        print(f"[失败] 读取主集合信息失败：{e}")
         return False
     finally:
         try:
@@ -223,10 +210,10 @@ def check_qdrant_collection() -> bool:
 
 
 def check_qdrant_temp_write_search(vector: list[float]) -> bool:
-    print_step("5. Check Qdrant temporary writes/retrievals/deletions")
+    print_step("5. 检查 Qdrant 临时写入 / 检索 / 删除")
 
     if not vector:
-        print("[Failure] No vector available, temporary write test cannot be performed.")
+        print("[失败] 没有可用向量，无法进行临时写入测试。")
         return False
 
     temp_collection = f"health_check_tmp_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -275,23 +262,23 @@ def check_qdrant_temp_write_search(vector: list[float]) -> bool:
             )
 
         if not points:
-            print("[failed] temporary collectionno retrieval results. ")
+            print("[失败] 临时集合检索无结果。")
             return False
 
-        print("[OK] temporary collection andretrieval . ")
-        print(f"temporary collection:{temp_collection}")
-        print(f"retrieval score:{points[0].score:.4f}")
+        print("[成功] 临时集合写入和检索正常。")
+        print(f"临时集合：{temp_collection}")
+        print(f"检索分数：{points[0].score:.4f}")
 
         return True
 
     except Exception as e:
-        print(f"[failed] Qdrant temporary  / retrievalfailed:{e}")
+        print(f"[失败] Qdrant 临时写入 / 检索失败：{e}")
         return False
 
     finally:
         try:
             client.delete_collection(temp_collection)
-            print(f"[completed] alreadydeletetemporary collection:{temp_collection}")
+            print(f"[完成] 已删除临时集合：{temp_collection}")
         except Exception:
             pass
 
@@ -303,7 +290,7 @@ def check_qdrant_temp_write_search(vector: list[float]) -> bool:
 
 def run_subprocess_check(title: str, command: list[str]) -> bool:
     print_step(title)
-    print("command:", " ".join(command))
+    print("执行命令：", " ".join(command))
     print("")
 
     env = os.environ.copy()
@@ -322,7 +309,7 @@ def run_subprocess_check(title: str, command: list[str]) -> bool:
             env=env,
         )
     except Exception as e:
-        print(f"[failed] subprocess execution exception:{e}")
+        print(f"[失败] 子进程执行异常：{e}")
         return False
 
     if result.stdout:
@@ -333,96 +320,96 @@ def run_subprocess_check(title: str, command: list[str]) -> bool:
         print(result.stderr)
 
     if result.returncode != 0:
-        print(f"[failed] return code:{result.returncode}")
+        print(f"[失败] 返回码：{result.returncode}")
         return False
 
-    print("[OK] commandexecute . ")
+    print("[成功] 命令执行正常。")
     return True
 
 
 def check_search_docs() -> bool:
     return run_subprocess_check(
-        title="6. check search_docs.py search function",
+        title="6. 检查 search_docs.py 搜索功能",
         command=[
             sys.executable,
             "search_docs.py",
             "--project",
-            "Demo_Project",
+            "Personal_Project_Assistant",
             "--limit",
             "1",
-            " purpose stagemodel is ？",
+            "当前项目的第一阶段模型方案是什么？",
         ],
     )
 
 
 def check_ask_core() -> bool:
-    print_step("7. check ask.py coreretrieval +  ")
+    print_step("7. 检查 ask.py 核心检索 + 生成函数")
 
     try:
         import ask
 
-        question = " purpose stagemodel is ？"
+        question = "当前项目的第一阶段模型方案是什么？"
 
         contexts = ask.search_context(
             question=question,
             limit=2,
-            project="Demo_Project",
+            project="Personal_Project_Assistant",
         )
 
         if not contexts:
-            print("[failed] ask.search_context not retrieved records. ")
+            print("[失败] ask.search_context 未检索到资料。")
             return False
 
-        print(f"[OK] ask.search_context retrieved recordscount:{len(contexts)}")
+        print(f"[成功] ask.search_context 检索到资料数量：{len(contexts)}")
 
         answer = ask.generate_answer(question, contexts)
 
         if not answer:
-            print("[failed] ask.generate_answer  is empty. ")
+            print("[失败] ask.generate_answer 返回为空。")
             return False
 
-        print("[OK] ask.generate_answer  . ")
-        print("answer preview:")
+        print("[成功] ask.generate_answer 正常。")
+        print("回答预览：")
         print(answer[:500])
 
         return True
 
     except Exception as e:
-        print(f"[failed] ask.py core checkfailed:{e}")
+        print(f"[失败] ask.py 核心函数检查失败：{e}")
         return False
 
 
 def main():
-    print("Personal Project Secretary + Knowledge Base:full-chain health check")
-    print(f"check time:{datetime.now().isoformat(timespec='seconds')}")
-    print(f"working directory:{BASE_DIR}")
-    print(f"Python:{sys.executable}")
+    print("个人项目秘书 + 数据知识库：全链路健康检查")
+    print(f"检查时间：{datetime.now().isoformat(timespec='seconds')}")
+    print(f"工作目录：{BASE_DIR}")
+    print(f"Python：{sys.executable}")
 
     results = []
 
     ok = check_ollama_tags()
-    results.append(("Ollama API andmodel list", ok))
+    results.append(("Ollama API 与模型列表", ok))
 
     ok, vector = check_embedding()
-    results.append(("bge-m3 embedding generation", ok))
+    results.append(("bge-m3 向量生成", ok))
 
     ok = check_chat_generation()
-    results.append(("qwen3:8b  ", ok))
+    results.append(("qwen3:8b 文本生成", ok))
 
     ok = check_qdrant_collection()
-    results.append(("Qdrant andmain collection", ok))
+    results.append(("Qdrant 与主集合", ok))
 
     ok = check_qdrant_temp_write_search(vector)
-    results.append(("Qdrant temporary /retrieval/delete", ok))
+    results.append(("Qdrant 临时写入/检索/删除", ok))
 
     ok = check_search_docs()
-    results.append(("search_docs.py search function", ok))
+    results.append(("search_docs.py 搜索功能", ok))
 
     ok = check_ask_core()
-    results.append(("ask.py coreretrieval+ ", ok))
+    results.append(("ask.py 核心检索+生成", ok))
 
     print("\n" + "=" * 80)
-    print("full-chain health checksummary")
+    print("全链路健康检查总结")
     print("=" * 80)
 
     passed = 0
@@ -430,17 +417,17 @@ def main():
     for name, ok in results:
         if ok:
             passed += 1
-            print(f"[passed] {name}")
+            print(f"[通过] {name}")
         else:
-            print(f"[failed] {name}")
+            print(f"[失败] {name}")
 
     print("")
-    print(f"passed count:{passed}/{len(results)}")
+    print(f"通过数量：{passed}/{len(results)}")
 
     if passed == len(results):
-        print(" : , can . ")
+        print("结论：系统全链路健康，可以正常使用。")
     else:
-        print(" :existsfailed items, please logs aboverepair. ")
+        print("结论：存在失败项，请根据上方日志修复。")
 
 
 if __name__ == "__main__":

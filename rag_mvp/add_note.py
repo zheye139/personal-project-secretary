@@ -27,7 +27,7 @@ DEFAULT_DOC_TYPE_MAP = {
 
 def sanitize_filename(text: str) -> str:
     """
-    Convert a title into a Windows-safe file name.
+    将标题转换成适合 Windows 文件名的字符串。
     """
     text = text.strip()
     text = re.sub(r'[\\/:*?"<>|]', "_", text)
@@ -37,9 +37,9 @@ def sanitize_filename(text: str) -> str:
 
 def parse_tags(raw_tags: str | None) -> list[str]:
     """
-    Convert a comma-separated tag string into a list.
-     :
-    "RAG, Qdrant, issue record"
+    将逗号分隔的标签字符串转成列表。
+    示例：
+    "RAG, Qdrant, 问题记录"
     """
     if not raw_tags:
         return []
@@ -49,9 +49,9 @@ def parse_tags(raw_tags: str | None) -> list[str]:
 
 def read_content(args) -> str:
     """
-    Use --content first.
-    If --content is not provided but --from-file is set, read content from the file.
-    If neither option is provided, read content from standard input.
+    优先使用 --content。
+    如果没有 --content，但提供了 --from-file，则从文件读取。
+    如果都没有，则进入交互输入。
     """
     if args.content:
         return args.content.strip()
@@ -59,29 +59,29 @@ def read_content(args) -> str:
     if args.from_file:
         path = Path(args.from_file)
         if not path.exists():
-            raise FileNotFoundError(f"Content file does not exist: {path}")
+            raise FileNotFoundError(f"内容文件不存在：{path}")
         return path.read_text(encoding="utf-8").strip()
 
-    print("Please enter the note content. Press Ctrl+Z and then Enter to finish:")
+    print("请输入笔记正文。输入完成后按 Ctrl+Z 再回车结束：")
     import sys
     return sys.stdin.read().strip()
 
 
 def build_target_dir(category: str, project: str | None) -> Path:
     """
-    Build the target directory from category and project.
+    根据 category 和 project 生成保存目录。
     """
     if category not in CATEGORY_DIR_MAP:
         raise ValueError(
-            f"Not supported category:{category}. "
-            f"Optional value:{', '.join(CATEGORY_DIR_MAP.keys())}"
+            f"不支持的 category：{category}。"
+            f"可选值：{', '.join(CATEGORY_DIR_MAP.keys())}"
         )
 
     root_dir = KNOWLEDGE_ROOT / CATEGORY_DIR_MAP[category]
 
     if category == "project":
         if not project:
-            raise ValueError("category=project must be provided --project")
+            raise ValueError("category=project 时必须提供 --project")
         return root_dir / project / "notes"
 
     if category in ["problem", "decision", "summary"]:
@@ -106,7 +106,7 @@ def build_markdown(
     content: str,
 ) -> str:
     """
-    Generate Markdown content with Frontmatter.
+    生成带 Frontmatter 的 Markdown 内容。
     """
     now = datetime.now().isoformat(timespec="seconds")
     tag_text = "[" + ", ".join(tags) + "]" if tags else "[]"
@@ -132,50 +132,50 @@ def build_markdown(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Personal Project Secretary + Knowledge Base: add a Markdown note."
+        description="个人项目秘书 + 数据知识库：快速新增 Markdown 记录"
     )
 
     parser.add_argument(
         "--category",
         required=True,
         choices=["project", "knowledge", "decision", "problem", "summary"],
-        help="Note category: project / knowledge / decision / problem / summary",
+        help="资料大类：project / knowledge / decision / problem / summary",
     )
 
     parser.add_argument(
         "--project",
-        default="Demo_Project",
-        help="Project name, for example: Demo_Project.",
+        default="Personal_Project_Assistant",
+        help="所属项目，例如 Personal_Project_Assistant",
     )
 
     parser.add_argument(
         "--doc-type",
         default=None,
-        help="Document type, for example: progress_log, issue, decision, summary, knowledge_note.",
+        help="文档类型，例如 progress_log、issue、decision、summary、knowledge_note",
     )
 
     parser.add_argument(
         "--title",
         required=True,
-        help="Note title.",
+        help="记录标题",
     )
 
     parser.add_argument(
         "--tags",
         default=None,
-        help="Tags separated by commas, for example: RAG,Qdrant,issue.",
+        help="标签，多个标签用英文逗号分隔，例如：RAG,Qdrant,问题记录",
     )
 
     parser.add_argument(
         "--content",
         default=None,
-        help="Note content.",
+        help="记录正文内容",
     )
 
     parser.add_argument(
         "--from-file",
         default=None,
-        help="Read note content from a text file.",
+        help="从指定文本文件读取正文内容",
     )
 
     args = parser.parse_args()
@@ -187,7 +187,7 @@ def main():
     content = read_content(args)
 
     if not content:
-        raise ValueError("Note content cannot be empty. Please use --content or --from-file.")
+        raise ValueError("正文内容不能为空。请使用 --content 或 --from-file 提供内容。")
 
     target_dir = build_target_dir(category=category, project=project)
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -207,10 +207,10 @@ def main():
 
     file_path.write_text(markdown, encoding="utf-8")
 
-    print("Record created:")
+    print("记录已创建：")
     print(file_path)
     print("")
-    print("Next step:")
+    print("下一步可执行：")
     print("python ingest.py")
 
 

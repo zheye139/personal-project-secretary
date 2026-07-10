@@ -1,36 +1,21 @@
-import os
 from collections import defaultdict
 
-from qdrant_client import QdrantClient
+import vector_store_config
 
-from config import QDRANT_URL, COLLECTION_NAME
+QDRANT_URL = vector_store_config.get_qdrant_url()
+COLLECTION_NAME = vector_store_config.get_collection_name()
 
 
-# Prevent local service requests from going through system proxies.
-for key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-]:
-    os.environ.pop(key, None)
-
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+# 避免访问本机服务时走系统代理
+vector_store_config.configure_qdrant_environment()
 
 
 def main():
-    client = QdrantClient(
-        url=QDRANT_URL,
-        check_compatibility=False,
-        timeout=60,
-    )
+    client = vector_store_config.get_qdrant_client(timeout=60)
 
     if not client.collection_exists(COLLECTION_NAME):
-        print(f"collection does not exist:{COLLECTION_NAME}")
-        print("please first :python ingest.py")
+        print(f"集合不存在：{COLLECTION_NAME}")
+        print("请先运行：python ingest.py")
         return
 
     docs = defaultdict(
@@ -75,10 +60,10 @@ def main():
         if offset is None:
             break
 
-    print("=== already document list ===")
-    print(f"collection name:{COLLECTION_NAME}")
-    print(f"total chunk count:{total}")
-    print(f"document count:{len(docs)}")
+    print("=== 已入库文档列表 ===")
+    print(f"集合名称：{COLLECTION_NAME}")
+    print(f"片段总数：{total}")
+    print(f"文档数量：{len(docs)}")
 
     by_project = defaultdict(list)
 
@@ -86,16 +71,16 @@ def main():
         by_project[info["project"]].append(info)
 
     for project, items in sorted(by_project.items()):
-        print(f"\n##  :{project}")
+        print(f"\n## 项目：{project}")
 
         for info in sorted(items, key=lambda x: x["source"]):
             print(
                 f"- {info['doc_type']} | "
                 f"{info['file_name']} | "
-                f"chunk :{info['chunks']} | "
-                f"updated at:{info['updated_at']}"
+                f"片段数：{info['chunks']} | "
+                f"更新时间：{info['updated_at']}"
             )
-            print(f"  source:{info['source']}")
+            print(f"  来源：{info['source']}")
 
     try:
         client.close()

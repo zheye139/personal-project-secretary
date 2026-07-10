@@ -1,5 +1,4 @@
 import argparse
-import os
 import re
 import requests
 import sys
@@ -10,16 +9,17 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 import config
+import vector_store_config
 
 
 # ============================================================
-# base configuration
+# 基础配置
 # ============================================================
 
 OLLAMA_URL = config.OLLAMA_URL
 CHAT_MODEL = config.CHAT_MODEL
-QDRANT_URL = config.QDRANT_URL
-COLLECTION_NAME = config.COLLECTION_NAME
+QDRANT_URL = vector_store_config.get_qdrant_url()
+COLLECTION_NAME = vector_store_config.get_collection_name()
 KNOWLEDGE_ROOT = config.KNOWLEDGE_ROOT
 
 NEXT_ACTION_DIR = getattr(
@@ -30,7 +30,7 @@ NEXT_ACTION_DIR = getattr(
 
 
 # ============================================================
-# Windows / PowerShell English output 
+# Windows / PowerShell 中文输出处理
 # ============================================================
 
 try:
@@ -41,21 +41,10 @@ except Exception:
 
 
 # ============================================================
-# Prevent local service requests from going through system proxies.
+# 避免访问本机服务时走系统代理
 # ============================================================
 
-for key in [
-    "HTTP_PROXY",
-    "HTTPS_PROXY",
-    "ALL_PROXY",
-    "http_proxy",
-    "https_proxy",
-    "all_proxy",
-]:
-    os.environ.pop(key, None)
-
-os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
-os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
+vector_store_config.configure_qdrant_environment()
 
 
 DEFAULT_DOC_TYPES = [
@@ -67,7 +56,7 @@ DEFAULT_DOC_TYPES = [
 
 def clean_model_response(text: str) -> str:
     """
-    cleanup qwen3 cancan  <think>...</think> content. 
+    清理 qwen3 可能输出的 <think>...</think> 内容。
     """
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     return text.strip()
@@ -75,19 +64,15 @@ def clean_model_response(text: str) -> str:
 
 def get_qdrant_client() -> QdrantClient:
     """
-    create Qdrant  . 
+    创建 Qdrant 客户端。
     """
-    return QdrantClient(
-        url=QDRANT_URL,
-        check_compatibility=False,
-        timeout=60,
-    )
+    return vector_store_config.get_qdrant_client(timeout=60)
 
 
 def build_project_filter(project: str):
     """
-    Qdrant  only  project filter. 
-    doc_type in Python inthenfilter,  conditions OR  issue. 
+    Qdrant 层只按 project 过滤。
+    doc_type 在 Python 中再过滤，避免多条件 OR 兼容性问题。
     """
     return Filter(
         must=[
@@ -101,8 +86,8 @@ def build_project_filter(project: str):
 
 def parse_doc_types(raw_doc_types: list[str] | None) -> list[str]:
     """
-    parsecommand  doc_type. 
-    if has ,  defaultgoaldocument type. 
+    解析命令行传入的 doc_type。
+    如果没有传入，则使用默认目标文档类型。
     """
     if not raw_doc_types:
         return DEFAULT_DOC_TYPES
@@ -118,7 +103,7 @@ def parse_doc_types(raw_doc_types: list[str] | None) -> list[str]:
 
 def safe_text_preview(text: str, max_chars: int = 300) -> str:
     """
-     preview . 
+    生成短预览文本。
     """
     text = text.replace("\n", " ").strip()
 
@@ -135,19 +120,19 @@ def load_project_contexts(
     max_chars: int = 24000,
 ) -> list[dict]:
     """
-    from Qdrant inreadspecified purposecandidaterecords. 
+    从 Qdrant 中读取指定项目的候选资料。
 
-    read :
-    1. first  project from Qdrant scroll. 
-    2. thenin Python in  doc_type. 
-    3.   updated_at  sort. 
-    4. limit chunk countand ,   prompt  . 
+    读取逻辑：
+    1. 先按 project 从 Qdrant scroll。
+    2. 再在 Python 中筛选 doc_type。
+    3. 按 updated_at 倒序排序。
+    4. 限制最大片段数量和最大字符数，避免 prompt 过长。
     """
     client = get_qdrant_client()
 
     if not client.collection_exists(COLLECTION_NAME):
         raise RuntimeError(
-            f"collection does not exist:{COLLECTION_NAME}, please first  python update_index.py"
+            f"集合不存在：{COLLECTION_NAME}，请先运行 python update_index.py"
         )
 
     scroll_filter = build_project_filter(project)
@@ -226,22 +211,22 @@ def load_project_contexts(
 
 def build_context_text(contexts: list[dict]) -> str:
     """
-    retrieved records model . 
+    将检索到的资料整理成给模型使用的上下文文本。
     """
     lines = []
 
     for index, ctx in enumerate(contexts, start=1):
-        lines.append(f"## records {index}")
+        lines.append(f"## 资料 {index}")
         lines.append("")
-        lines.append(f"- record category:{ctx.get('category', '')}")
-        lines.append(f"-  :{ctx.get('project', '')}")
-        lines.append(f"- document type:{ctx.get('doc_type', '')}")
-        lines.append(f"- title:{ctx.get('title', '')}")
-        lines.append(f"- tags:{ctx.get('tags', [])}")
-        lines.append(f"- file:{ctx.get('file_name', '')}")
-        lines.append(f"- source:{ctx.get('source', '')}")
-        lines.append(f"- chunk:{ctx.get('chunk_index', '')}")
-        lines.append(f"- updated at:{ctx.get('updated_at', '')}")
+        lines.append(f"- 资料大类：{ctx.get('category', '')}")
+        lines.append(f"- 项目：{ctx.get('project', '')}")
+        lines.append(f"- 文档类型：{ctx.get('doc_type', '')}")
+        lines.append(f"- 标题：{ctx.get('title', '')}")
+        lines.append(f"- 标签：{ctx.get('tags', [])}")
+        lines.append(f"- 文件：{ctx.get('file_name', '')}")
+        lines.append(f"- 来源：{ctx.get('source', '')}")
+        lines.append(f"- 片段：{ctx.get('chunk_index', '')}")
+        lines.append(f"- 更新时间：{ctx.get('updated_at', '')}")
         lines.append("")
         lines.append(ctx.get("text", ""))
         lines.append("")
@@ -251,7 +236,7 @@ def build_context_text(contexts: list[dict]) -> str:
 
 def build_source_summary(contexts: list[dict]) -> list[str]:
     """
-     source ,   Markdown report. 
+    生成来源列表，写入最终 Markdown 报告。
     """
     sources = []
 
@@ -271,19 +256,19 @@ def build_source_summary(contexts: list[dict]) -> list[str]:
 
 def generate_next_actions(project: str, contexts: list[dict]) -> str:
     """
-    call qwen3:8b, fromproject recordsin next action items. 
+    调用 qwen3:8b，从项目资料中提取下一步行动项。
     """
     if not contexts:
         lines = [
-            f"# {project} next action list",
+            f"# {project} 下一步行动清单",
             "",
-            "Loaded project records are available for analysis. ",
+            "当前没有读取到可用于提取行动项的项目资料。",
             "",
-            "recommendations:",
+            "建议：",
             "",
-            "1.   progress_log.md. ",
-            "2.   next_steps.md. ",
-            "3.   project_report or weekly_report  re- script. ",
+            "1. 补充 progress_log.md。",
+            "2. 补充 next_steps.md。",
+            "3. 生成 project_report 或 weekly_report 后重新运行本脚本。",
             "",
         ]
         return "\n".join(lines)
@@ -291,49 +276,49 @@ def generate_next_actions(project: str, contexts: list[dict]) -> str:
     context_text = build_context_text(contexts)
 
     prompt_lines = [
-        " is Personal Project Secretaryand . ",
+        "你是我的个人项目秘书和项目管理助手。",
         "",
-        "Use project records to extract actionable next items. ",
+        "请根据下面提供的项目资料，提取可执行的下一步行动项。",
         "",
-        "[project name]",
+        "【项目名称】",
         project,
         "",
-        "[project records]",
+        "【项目资料】",
         context_text,
         "",
-        "[ ]",
-        "Use English Markdown output. ",
+        "【输出要求】",
+        "请使用中文 Markdown 输出。",
         "",
-        f"# {project} next action list",
+        f"# {project} 下一步行动清单",
         "",
-        "## 1. direct conclusion",
-        "  3 to 6  this items. ",
+        "## 1. 直接结论",
+        "用 3 到 6 条概括当前最应该推进的事项。",
         "",
-        "## 2. to-do items ",
-        "please ,  :",
+        "## 2. 待办事项清单",
+        "请用表格输出，列包含：",
         "",
-        "|   | to-do items | recommended to prioritize  | sourceevidence |   |",
+        "| 编号 | 待办事项 | 建议优先级 | 来源依据 | 备注 |",
         "| --- | --- | --- | --- | --- |",
         "",
-        " :",
-        "1. to-do items iscanexecute , not empty . ",
-        "2. recommended to prioritize onlycan :  / in /  . ",
-        "3. sourceevidence  progress_log, next_steps, project_report or weekly_report. ",
-        "4. if insufficient records, please 'insufficient records, no '. ",
+        "要求：",
+        "1. 待办事项必须是可执行动作，不要写空泛表述。",
+        "2. 建议优先级只能使用：高 / 中 / 低。",
+        "3. 来源依据要尽量写明来自 progress_log、next_steps、project_report 或 weekly_report。",
+        "4. 如果资料不足，请写“资料不足，无法确认”。",
         "",
-        "## 3. todayrecommendations",
-        "list  1 to 3  items. ",
+        "## 3. 今日建议",
+        "列出今天最适合处理的 1 到 3 个事项。",
         "",
-        "## 4. this weekrecommendations",
-        "listthis weekrecommendations items. ",
+        "## 4. 本周建议",
+        "列出本周建议处理的事项。",
         "",
-        "## 5.  records",
-        "identifyas to-do items,  record. ",
+        "## 5. 需要补充的资料",
+        "指出为了更准确提取待办事项，还需要补充哪些记录。",
         "",
-        " :",
-        "1. do not fabricate informationrecordsindoes not exist . ",
-        "2. do not output reasoning process. ",
-        "3. not  <think> tags. ",
+        "额外要求：",
+        "1. 不要编造资料中不存在的事实。",
+        "2. 不要输出思考过程。",
+        "3. 不要输出 <think> 标签。",
     ]
 
     prompt = "\n".join(prompt_lines)
@@ -360,7 +345,7 @@ def save_next_actions(
     doc_types: list[str],
 ) -> Path:
     """
-     saveas Markdown file,  laterre- . 
+    将行动清单保存为 Markdown 文件，方便后续重新入库。
     """
     NEXT_ACTION_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -375,12 +360,12 @@ def save_next_actions(
     lines = []
 
     lines.append("---")
-    lines.append(f"title: {project} next action list {timestamp}")
+    lines.append(f"title: {project} 下一步行动清单 {timestamp}")
     lines.append(f"created: {now.isoformat(timespec='seconds')}")
     lines.append("category: summary")
     lines.append(f"project: {project}")
     lines.append("doc_type: next_action_report")
-    lines.append("tags: [next actions, to-do items, M2.1, auto generated]")
+    lines.append("tags: [下一步行动, 待办事项, M2.1, 自动生成]")
     lines.append(f"source_doc_types: {doc_type_text}")
     lines.append("---")
     lines.append("")
@@ -388,11 +373,11 @@ def save_next_actions(
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("##  knowledge basesource")
+    lines.append("## 本行动清单使用的知识库来源")
     lines.append("")
 
     if not sources:
-        lines.append("No source recorded. ")
+        lines.append("未记录来源。")
     else:
         for source in sources:
             lines.append(f"- {source}")
@@ -405,13 +390,13 @@ def save_next_actions(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Personal Project Secretary + Knowledge Base: next action items"
+        description="个人项目秘书 + 数据知识库：提取项目下一步行动项"
     )
 
     parser.add_argument(
         "--project",
         required=True,
-        help="project name, for example Personal_Project_Assistant",
+        help="项目名称，例如 Personal_Project_Assistant",
     )
 
     parser.add_argument(
@@ -419,9 +404,9 @@ def main():
         action="append",
         default=None,
         help=(
-            "specified and document type. "
-            "canduplicate ,  can . "
-            "default:progress_log,next_steps,project_report,weekly_report"
+            "指定参与分析的文档类型。"
+            "可重复使用，也可用逗号分隔。"
+            "默认：progress_log,next_steps,project_report,weekly_report"
         ),
     )
 
@@ -429,31 +414,31 @@ def main():
         "--max-points",
         type=int,
         default=120,
-        help=" read chunk. ",
+        help="最多读取多少个向量片段。",
     )
 
     parser.add_argument(
         "--max-chars",
         type=int,
         default=24000,
-        help=" model. ",
+        help="最多提供多少字符给模型。",
     )
 
     parser.add_argument(
         "--no-save",
         action="store_true",
-        help="onlyin , notsave Markdown file. ",
+        help="只在终端输出，不保存 Markdown 文件。",
     )
 
     args = parser.parse_args()
 
     doc_types = parse_doc_types(args.doc_type)
 
-    print("Personal Project Secretary + Knowledge Base:next action items ")
-    print(f" :{args.project}")
-    print(f"goaldocument type:{doc_types}")
-    print(f" chunk :{args.max_points}")
-    print(f" :{args.max_chars}")
+    print("个人项目秘书 + 数据知识库：下一步行动项提取")
+    print(f"项目：{args.project}")
+    print(f"目标文档类型：{doc_types}")
+    print(f"最大片段数：{args.max_points}")
+    print(f"最大字符数：{args.max_chars}")
 
     contexts = load_project_contexts(
         project=args.project,
@@ -462,11 +447,11 @@ def main():
         max_chars=args.max_chars,
     )
 
-    print(f"candidate record chunk count:{len(contexts)}")
+    print(f"读取到候选资料片段数量：{len(contexts)}")
 
     if contexts:
         print("")
-        print("candidaterecordspreview:")
+        print("候选资料预览：")
 
         for index, ctx in enumerate(contexts[:8], start=1):
             print(
@@ -475,11 +460,11 @@ def main():
                 f"{ctx.get('file_name', '')} | "
                 f"{ctx.get('updated_at', '')}"
             )
-            print(f"   source:{ctx.get('source', '')}")
-            print(f"   content:{safe_text_preview(ctx.get('text', ''), 120)}")
+            print(f"   来源：{ctx.get('source', '')}")
+            print(f"   内容：{safe_text_preview(ctx.get('text', ''), 120)}")
 
     print("")
-    print("running next action list...")
+    print("正在生成下一步行动清单...")
 
     report = generate_next_actions(
         project=args.project,
@@ -488,13 +473,13 @@ def main():
 
     print("")
     print("=" * 80)
-    print("next action list")
+    print("下一步行动清单")
     print("=" * 80)
     print(report)
 
     if args.no_save:
         print("")
-        print("already  --no-save,  save Markdown file. ")
+        print("已选择 --no-save，未保存 Markdown 文件。")
         return
 
     file_path = save_next_actions(
@@ -505,14 +490,14 @@ def main():
     )
 
     print("")
-    print(" alreadysave:")
+    print("行动清单已保存：")
     print(file_path)
     print("")
-    print("recommended next command:")
+    print("建议下一步执行：")
     print("python update_index.py")
     print(
         'python ask.py --doc-type next_action_report '
-        '" next steps this ？"'
+        '"当前项目下一步最应该做什么？"'
     )
 
 

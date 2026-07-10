@@ -38,6 +38,70 @@ except Exception:
 
 MANIFEST_VERSION = 1
 
+# ============================================================
+# Manifest metadata 默认字段
+# ============================================================
+
+MANIFEST_METADATA_FIELDS = [
+    "category",
+    "project",
+    "doc_type",
+    "title",
+    "file_name",
+    "tags",
+]
+
+
+def default_manifest_metadata() -> dict:
+    """
+    返回 manifest 记录中的默认 metadata 字段。
+
+    这些字段用于后续 launcher.py / Web UI / project_discovery.py：
+    1. project 下拉框
+    2. doc_type 下拉框
+    3. category 下拉框
+    4. tag 过滤
+    5. 文件列表显示
+    """
+    return {
+        "category": "",
+        "project": "",
+        "doc_type": "",
+        "title": "",
+        "file_name": "",
+        "tags": [],
+    }
+
+
+def normalize_tags_value(value) -> list[str]:
+    """
+    将 manifest 中的 tags 统一为 list[str]。
+
+    兼容旧数据：
+    1. tags 不存在
+    2. tags 是字符串
+    3. tags 是列表
+    """
+    if not value:
+        return []
+
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+
+    raw = str(value).strip()
+
+    if not raw:
+        return []
+
+    if raw.startswith("[") and raw.endswith("]"):
+        raw = raw[1:-1]
+
+    return [
+        item.strip().strip('"').strip("'")
+        for item in raw.split(",")
+        if item.strip()
+    ]
+
 
 # ============================================================
 # 默认跳过目录
@@ -184,23 +248,43 @@ def build_manifest_record(
     path: Path,
     chunk_count: int = 0,
     point_ids: list[str] | None = None,
+    metadata: dict | None = None,
 ) -> dict:
     """
     构建一个完整 manifest 文件记录。
 
-    M3.1 阶段 chunk_count 和 point_ids 可以先为空。
-    M3.2 增量入库时会真正写入这些字段。
+    M4.0 增强：
+    1. 保留原有 source / mtime_ns / size / sha256 / chunk_count / point_ids。
+    2. 增加 category / project / doc_type / title / file_name / tags。
+    3. 旧调用不传 metadata 时仍然兼容。
     """
     fingerprint = build_file_fingerprint(path)
+
+    meta = default_manifest_metadata()
+    metadata = metadata or {}
+
+    for key in MANIFEST_METADATA_FIELDS:
+        if key in metadata:
+            meta[key] = metadata.get(key)
+
+    meta["file_name"] = meta.get("file_name") or path.name
+    meta["title"] = meta.get("title") or path.stem
+    meta["tags"] = normalize_tags_value(meta.get("tags"))
 
     record = {
         "source": fingerprint["source"],
         "mtime_ns": fingerprint["mtime_ns"],
         "size": fingerprint["size"],
         "sha256": fingerprint["sha256"],
-        "chunk_count": chunk_count,
+        "chunk_count": int(chunk_count or 0),
         "point_ids": point_ids or [],
         "updated_at": now_iso(),
+        "category": str(meta.get("category", "") or ""),
+        "project": str(meta.get("project", "") or ""),
+        "doc_type": str(meta.get("doc_type", "") or ""),
+        "title": str(meta.get("title", "") or ""),
+        "file_name": str(meta.get("file_name", "") or ""),
+        "tags": normalize_tags_value(meta.get("tags", [])),
     }
 
     return record
@@ -230,9 +314,53 @@ def empty_manifest() -> dict:
     }
 
 
+def normalize_manifest_record(source: str, record: dict) -> dict:
+    """
+    规范化单条 manifest 文件记录。
+
+    作用：
+    1. 兼容 M3 旧 manifest。
+    2. 旧记录缺少 project/category/doc_type/title/file_name/tags 时自动补空。
+    3. 避免后续 project_discovery.py / launcher.py 读取时报 KeyError。
+    """
+    if not isinstance(record, dict):
+        record = {}
+
+    normalized = {
+        "source": record.get("source", source),
+        "mtime_ns": record.get("mtime_ns", 0),
+        "size": record.get("size", 0),
+        "sha256": record.get("sha256", ""),
+        "chunk_count": int(record.get("chunk_count", 0) or 0),
+        "point_ids": record.get("point_ids", []),
+        "updated_at": record.get("updated_at", ""),
+        "category": record.get("category", ""),
+        "project": record.get("project", ""),
+        "doc_type": record.get("doc_type", ""),
+        "title": record.get("title", ""),
+        "file_name": record.get("file_name", ""),
+        "tags": normalize_tags_value(record.get("tags", [])),
+    }
+
+    if not isinstance(normalized["point_ids"], list):
+        normalized["point_ids"] = []
+
+    if not normalized["file_name"]:
+        normalized["file_name"] = Path(source).name
+
+    if not normalized["title"]:
+        normalized["title"] = Path(source).stem
+
+    return normalized
+
+
 def normalize_manifest(raw: dict | None) -> dict:
     """
     修正 manifest 结构，避免字段缺失。
+
+    M4.0 增强：
+    - 自动规范化 files 内每条记录。
+    - 旧 manifest 不需要手动迁移，也能被新代码读取。
     """
     if not isinstance(raw, dict):
         return empty_manifest()
@@ -247,6 +375,16 @@ def normalize_manifest(raw: dict | None) -> dict:
 
     if not isinstance(manifest["files"], dict):
         manifest["files"] = {}
+
+    normalized_files = {}
+
+    for source, record in manifest["files"].items():
+        normalized_files[source] = normalize_manifest_record(
+            source=source,
+            record=record,
+        )
+
+    manifest["files"] = normalized_files
 
     return manifest
 
@@ -434,8 +572,9 @@ def update_manifest_from_scan(manifest: dict, scanned_files: dict[str, dict]) ->
     根据当前扫描结果更新 manifest。
 
     注意：
-    M3.1 阶段这个函数只写入基础文件记录。
-    后续 M3.2 中，入库成功后会补充 point_ids 和 chunk_count。
+    1. 本函数只根据文件指纹更新 manifest。
+    2. 如果旧记录已经有 project/category/doc_type/title/tags，会保留。
+    3. 如果旧记录没有 metadata，会填入空字段，后续通过 update_index.py --force-all 补齐。
     """
     manifest = normalize_manifest(manifest)
 
@@ -449,12 +588,18 @@ def update_manifest_from_scan(manifest: dict, scanned_files: dict[str, dict]) ->
             "mtime_ns": fingerprint["mtime_ns"],
             "size": fingerprint["size"],
             "sha256": fingerprint["sha256"],
-            "chunk_count": old_record.get("chunk_count", 0),
+            "chunk_count": int(old_record.get("chunk_count", 0) or 0),
             "point_ids": old_record.get("point_ids", []),
-            "updated_at": now_iso(),
+            "updated_at": old_record.get("updated_at", now_iso()),
+            "category": old_record.get("category", ""),
+            "project": old_record.get("project", ""),
+            "doc_type": old_record.get("doc_type", ""),
+            "title": old_record.get("title", Path(source).stem),
+            "file_name": old_record.get("file_name", Path(source).name),
+            "tags": normalize_tags_value(old_record.get("tags", [])),
         }
 
-        new_files[source] = record
+        new_files[source] = normalize_manifest_record(source, record)
 
     manifest["files"] = new_files
     manifest["updated_at"] = now_iso()
